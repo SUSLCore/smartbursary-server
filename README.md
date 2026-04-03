@@ -34,8 +34,8 @@ The backend is built using **Express.js** with **Sequelize ORM** and **MySQL**, 
 Clone the repository:
 
 ```bash
-git clone <your-backend-repository-url>
-cd smartbursery-backend
+git clone [<your-backend-repository-url>](https://github.com/SUSLCore/smartbursary-server.git)
+cd smartbursery-server
 ```
 
 Install dependencies:
