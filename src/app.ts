@@ -13,7 +13,7 @@ app.use(morgan("dev"));
 app.get("/api/test", (req: Request, res: Response) => {
   res.status(200).json({
     success: true,
-    message: "SmartBursary backend working successfully 🚀"
+    message: "SmartBursary backend working successfully..."
   });
 });
 
