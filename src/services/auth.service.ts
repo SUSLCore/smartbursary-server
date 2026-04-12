@@ -3,6 +3,12 @@ import { hashPassword, comparePassword } from "../utils/hashPassword";
 import { generateToken } from "../utils/generateToken";
 import { UserRole } from "../types/user.types";
 
+export const sanitizeUser = (user: any) => {
+  const safeUser = user.toJSON ? user.toJSON() : { ...user };
+  delete safeUser.password;
+  return safeUser;
+};
+
 export const registerStudentService = async (data: any) => {
   const existingUser = await User.findOne({
     where: { email: data.email },
@@ -25,12 +31,13 @@ export const registerStudentService = async (data: any) => {
     phone: data.phone,
   });
 
-  return student;
+  return sanitizeUser(student);
 };
 
 export const loginService = async (email: string, password: string) => {
   const user = await User.findOne({
     where: { email },
+    attributes: { include: ["password"] },
   });
 
   if (!user) {
@@ -48,5 +55,7 @@ export const loginService = async (email: string, password: string) => {
     user.getDataValue("role")
   );
 
-  return { user, token };
+  const safeUser = sanitizeUser(user);
+
+  return { user: safeUser, token };
 };
