@@ -3,6 +3,8 @@ import app from "./app";
 import sequelize from "./config/database";
 import "./models";
 import adminSeeder from "./seeders/adminSeeder";
+import facultySeeder from "./seeders/facultySeeder";
+import departmentSeeder from "./seeders/departmentSeeder";
 
 dotenv.config();
 
@@ -13,9 +15,11 @@ const startServer = async () => {
     await sequelize.authenticate();
     console.log("Database connected");
 
-    await sequelize.sync({ alter: true });
+    await sequelize.sync();
     console.log("Models synced");
 
+    await facultySeeder();
+    await departmentSeeder();
     await adminSeeder();
 
     app.listen(PORT, () => {
