@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import {
   registerStudentService,
   loginService,
+  sanitizeUser,
 } from "../services/auth.service";
 
 export const registerStudent = async (req: Request, res: Response) => {
@@ -37,7 +38,6 @@ export const login = async (req: Request, res: Response) => {
     res.status(200).json({
       success: true,
       message: "Login successful",
-      role: user.role,
       user,
     });
   } catch (error: any) {
@@ -49,10 +49,30 @@ export const login = async (req: Request, res: Response) => {
 };
 
 export const logout = (req: Request, res: Response) => {
-  res.clearCookie("token");
+  res.clearCookie("token", {
+    httpOnly: true,
+    secure: false,
+    sameSite: "lax",
+  });
 
   res.status(200).json({
     success: true,
     message: "Logged out successfully",
   });
+};
+
+export const getCurrentUser = async (req: any, res: Response) => {
+  try {
+    const safeUser = sanitizeUser(req.user);
+
+    res.status(200).json({
+      success: true,
+      user: safeUser,
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
 };

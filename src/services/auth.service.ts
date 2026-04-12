@@ -3,7 +3,7 @@ import { hashPassword, comparePassword } from "../utils/hashPassword";
 import { generateToken } from "../utils/generateToken";
 import { UserRole } from "../types/user.types";
 
-const sanitizeUser = (user: any) => {
+export const sanitizeUser = (user: any) => {
   const safeUser = user.toJSON ? user.toJSON() : { ...user };
   delete safeUser.password;
   return safeUser;
