@@ -3,6 +3,12 @@ import { hashPassword, comparePassword } from "../utils/hashPassword";
 import { generateToken } from "../utils/generateToken";
 import { UserRole } from "../types/user.types";
 
+const sanitizeUser = (user: any) => {
+  const safeUser = user.toJSON ? user.toJSON() : { ...user };
+  delete safeUser.password;
+  return safeUser;
+};
+
 export const registerStudentService = async (data: any) => {
   const existingUser = await User.findOne({
     where: { email: data.email },
@@ -25,24 +31,13 @@ export const registerStudentService = async (data: any) => {
     phone: data.phone,
   });
 
-   const safeStudent = {
-    id: student.getDataValue("id"),
-    registerId: student.getDataValue("registerId"),
-    name: student.getDataValue("name"),
-    email: student.getDataValue("email"),
-    role: student.getDataValue("role"),
-    phone: student.getDataValue("phone"),
-    FacultyId: student.getDataValue("FacultyId"),
-    DepartmentId: student.getDataValue("DepartmentId"),
-  };
-
-
-  return safeStudent;
+  return sanitizeUser(student);
 };
 
 export const loginService = async (email: string, password: string) => {
   const user = await User.findOne({
     where: { email },
+    attributes: { include: ["password"] },
   });
 
   if (!user) {
@@ -60,16 +55,7 @@ export const loginService = async (email: string, password: string) => {
     user.getDataValue("role")
   );
 
-  const safeUser = {
-    id: user.getDataValue("id"),
-    registerId: user.getDataValue("registerId"),
-    name: user.getDataValue("name"),
-    email: user.getDataValue("email"),
-    role: user.getDataValue("role"),
-    phone: user.getDataValue("phone"),
-    FacultyId: user.getDataValue("FacultyId"),
-    DepartmentId: user.getDataValue("DepartmentId"),
-  };
+  const safeUser = sanitizeUser(user);
 
   return { user: safeUser, token };
 };
