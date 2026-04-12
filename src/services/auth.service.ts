@@ -25,7 +25,19 @@ export const registerStudentService = async (data: any) => {
     phone: data.phone,
   });
 
-  return student;
+   const safeStudent = {
+    id: student.getDataValue("id"),
+    registerId: student.getDataValue("registerId"),
+    name: student.getDataValue("name"),
+    email: student.getDataValue("email"),
+    role: student.getDataValue("role"),
+    phone: student.getDataValue("phone"),
+    FacultyId: student.getDataValue("FacultyId"),
+    DepartmentId: student.getDataValue("DepartmentId"),
+  };
+
+
+  return safeStudent;
 };
 
 export const loginService = async (email: string, password: string) => {
@@ -48,5 +60,16 @@ export const loginService = async (email: string, password: string) => {
     user.getDataValue("role")
   );
 
-  return { user, token };
+  const safeUser = {
+    id: user.getDataValue("id"),
+    registerId: user.getDataValue("registerId"),
+    name: user.getDataValue("name"),
+    email: user.getDataValue("email"),
+    role: user.getDataValue("role"),
+    phone: user.getDataValue("phone"),
+    FacultyId: user.getDataValue("FacultyId"),
+    DepartmentId: user.getDataValue("DepartmentId"),
+  };
+
+  return { user: safeUser, token };
 };

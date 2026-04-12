@@ -37,7 +37,7 @@ export const login = async (req: Request, res: Response) => {
     res.status(200).json({
       success: true,
       message: "Login successful",
-      role: user.getDataValue("role"),
+      role: user.role,
       user,
     });
   } catch (error: any) {
