@@ -10,3 +10,4 @@ export enum UserRole {
   DEPARTMENT_HEAD = "DEPARTMENT_HEAD",
   STUDENT = "STUDENT",
 }
+

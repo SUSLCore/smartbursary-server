@@ -26,9 +26,11 @@ export const registerStudentService = async (data: any) => {
     email: data.email,
     password: hashedPassword,
     role: UserRole.STUDENT,
-    FacultyId: data.facultyId,
-    DepartmentId: data.departmentId,
+    facultyId: data.facultyId,
+    departmentId: data.departmentId,
     phone: data.phone,
+    isActive: true,
+    mustChangePassword: false,
   });
 
   return sanitizeUser(student);
