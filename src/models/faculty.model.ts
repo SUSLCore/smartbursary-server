@@ -13,16 +13,12 @@ Faculty.init(
     name: {
       type: DataTypes.STRING,
       allowNull: false,
-    },
-    code: {
-      type: DataTypes.STRING,
-      allowNull: false,
       unique: true,
     },
   },
   {
     sequelize,
-    modelName: "Faculty",
+    tableName: "faculties",
   }
 );
 
