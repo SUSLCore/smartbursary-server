@@ -1,6 +1,5 @@
 import { DataTypes, Model } from "sequelize";
 import sequelize from "../config/database";
-import Faculty from "./faculty.model";
 
 class Department extends Model {}
 
@@ -11,6 +10,10 @@ Department.init(
       autoIncrement: true,
       primaryKey: true,
     },
+    facultyId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+    },
     name: {
       type: DataTypes.STRING,
       allowNull: false,
@@ -18,11 +21,8 @@ Department.init(
   },
   {
     sequelize,
-    modelName: "Department",
+    tableName: "departments",
   }
 );
-
-Faculty.hasMany(Department);
-Department.belongsTo(Faculty);
 
 export default Department;

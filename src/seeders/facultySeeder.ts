@@ -1,28 +1,44 @@
-import Faculty from "../models/faculty.model";
+import { Faculty, Department } from "../models";
 
-const faculties = [
-  { name: "Faculty of Agricultural Sciences", code: "FAS" },
-  { name: "Faculty of Applied Sciences", code: "FAPS" },
-  { name: "Faculty of Geomatics", code: "FG" },
-  { name: "Faculty of Management Studies", code: "FMS" },
-  { name: "Faculty of Social Sciences & Languages", code: "FSSL" },
-  { name: "Faculty of Medicine", code: "FM" },
-  { name: "Faculty of Technology", code: "FT" },
-  { name: "Faculty of Computing", code: "FC" },
-];
+export const seedFacultiesAndDepartments = async () => {
+  const faculties = [
+    {
+      name: "Faculty of Computing",
+      departments: [
+        "Software Engineering",
+        "Data Science",
+        "Information Systems",
+      ],
+    },
+    { name: "Faculty of Applied Sciences", departments: [] },
+    { name: "Faculty of Social Sciences", departments: [] },
+    { name: "Faculty of Geomatics", departments: [] },
+    { name: "Faculty of Technology", departments: [] },
+    { name: "Faculty of Management", departments: [] },
+    { name: "Faculty of Medicine", departments: [] },
+    { name: "Faculty of Agriculture", departments: [] },
+  ];
 
-const facultySeeder = async () => {
-  for (const faculty of faculties) {
-    const exists = await Faculty.findOne({
-      where: { code: faculty.code },
+  for (const item of faculties) {
+    const [faculty] = await Faculty.findOrCreate({
+      where: { name: item.name },
+      defaults: { name: item.name },
     });
 
-    if (!exists) {
-      await Faculty.create(faculty);
+    for (const departmentName of item.departments) {
+      await Department.findOrCreate({
+        where: {
+          name: departmentName,
+          facultyId: faculty.getDataValue("id"),
+        },
+        defaults: {
+          name: departmentName,
+          facultyId: faculty.getDataValue("id"),
+        },
+      });
     }
   }
 
-  console.log("✅ Faculties seeded");
+  console.log("Faculties and departments seeded");
 };
 
-export default facultySeeder;
