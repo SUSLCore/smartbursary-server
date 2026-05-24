@@ -12,7 +12,16 @@ export const protect = async (
   next: NextFunction
 ) => {
   try {
-    const token = req.cookies.token;
+    // Accept token from cookie or Authorization header
+    const cookieToken = req.cookies?.token;
+    const authHeader = req.headers.authorization;
+
+    let token: string | undefined = undefined;
+
+    if (cookieToken) token = cookieToken;
+    else if (authHeader && authHeader.startsWith("Bearer ")) {
+      token = authHeader.split(" ")[1];
+    }
 
     if (!token) {
       return res.status(401).json({

@@ -15,12 +15,11 @@ const startServer = async () => {
     await sequelize.authenticate();
     console.log("Database connected");
 
-    await sequelize.sync();
-    console.log("Models synced");
-     
     await sequelize.sync({ alter: true });
+    console.log("Models synced");
+
     await seedFacultiesAndDepartments();
-    
+    await departmentSeeder();
     await adminSeeder();
 
     app.listen(PORT, () => {
