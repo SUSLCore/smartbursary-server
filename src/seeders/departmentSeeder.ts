@@ -57,12 +57,12 @@ const departmentSeeder = async () => {
     if (!exists) {
       await Department.create({
         name: dept.name,
-        FacultyId: facultyMap[dept.faculty],
+        facultyId: facultyMap[dept.faculty],
       });
     }
   }
 
-  console.log("✅ Departments seeded");
+  console.log("Departments seeded");
 };
 
 export default departmentSeeder;
