@@ -11,12 +11,12 @@ export const seedFacultiesAndDepartments = async () => {
       ],
     },
     { name: "Faculty of Applied Sciences", departments: [] },
-    { name: "Faculty of Social Sciences", departments: [] },
+    { name: "Faculty of Social Sciences & Languages", departments: [] },
     { name: "Faculty of Geomatics", departments: [] },
     { name: "Faculty of Technology", departments: [] },
-    { name: "Faculty of Management", departments: [] },
+    { name: "Faculty of Management Studies", departments: [] },
     { name: "Faculty of Medicine", departments: [] },
-    { name: "Faculty of Agriculture", departments: [] },
+    { name: "Faculty of Agricultural Sciences", departments: [] },
   ];
 
   for (const item of faculties) {
@@ -39,6 +39,6 @@ export const seedFacultiesAndDepartments = async () => {
     }
   }
 
-  console.log("Faculties and departments seeded");
+  console.log("Faculties seeded");
 };
 
