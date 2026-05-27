@@ -57,7 +57,21 @@ export const loginService = async (email: string, password: string) => {
     user.getDataValue("role")
   );
 
-  const safeUser = sanitizeUser(user);
+const safeUser = sanitizeUser(user);
 
-  return { user: safeUser, token };
+return {
+  user: {
+    ...safeUser,
+
+    role: user.getDataValue("role"),
+
+    mustChangePassword:
+      user.getDataValue(
+        "mustChangePassword"
+      ),
+  },
+
+  token,
+};
+
 };
