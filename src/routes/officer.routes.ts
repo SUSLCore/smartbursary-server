@@ -1,32 +1,28 @@
 import express from "express";
 import { OfficerController } from "../controllers/officer.controller";
+import { protect } from "../middlewares/auth.middleware";
+import { authorize } from "../middlewares/authorize.middleware";
 
 const router = express.Router();
 
-/*
-University Level
-*/
-
 router.post(
   "/university-officers",
+  protect,
+  authorize("ADMIN"),
   OfficerController.createUniversityOfficer
 );
 
-/*
-Faculty Level
-*/
-
 router.post(
   "/faculties/:facultyId/officers",
+  protect,
+  authorize("ADMIN"),
   OfficerController.createFacultyOfficer
 );
 
-/*
-Department Level
-*/
-
 router.post(
   "/departments/:departmentId/officers",
+  protect,
+  authorize("ADMIN"),
   OfficerController.createDepartmentOfficer
 );
 
