@@ -4,9 +4,6 @@ import Faculty from "./faculty.model";
 import Department from "./department.model";
 import { UserRole } from "../types/user.types";
 
-/**
- * Type definitions (optional but good practice)
- */
 interface UserAttributes {
   id: number;
   registerId: string;
@@ -15,17 +12,32 @@ interface UserAttributes {
   password: string;
   role: UserRole;
   phone?: string;
+
   isActive: boolean;
+  mustChangePassword: boolean;
+
   facultyId?: number | null;
   departmentId?: number | null;
-  mustChangePassword: boolean;
+
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 interface UserCreationAttributes
-  extends Optional<UserAttributes, "id" | "phone" | "facultyId" | "departmentId"> {}
+  extends Optional<
+    UserAttributes,
+    | "id"
+    | "phone"
+    | "facultyId"
+    | "departmentId"
+    | "createdAt"
+    | "updatedAt"
+  > {}
 
-class User extends Model<UserAttributes, UserCreationAttributes>
-  implements UserAttributes {
+class User
+  extends Model<UserAttributes, UserCreationAttributes>
+  implements UserAttributes
+{
   public id!: number;
   public registerId!: string;
   public name!: string;
@@ -33,10 +45,15 @@ class User extends Model<UserAttributes, UserCreationAttributes>
   public password!: string;
   public role!: UserRole;
   public phone?: string;
+
   public isActive!: boolean;
+  public mustChangePassword!: boolean;
+
   public facultyId?: number | null;
   public departmentId?: number | null;
-  public mustChangePassword!: boolean;
+
+  public readonly createdAt!: Date;
+  public readonly updatedAt!: Date;
 }
 
 User.init(
@@ -49,8 +66,8 @@ User.init(
 
     registerId: {
       type: DataTypes.STRING,
-      unique: true,
       allowNull: false,
+      unique: true,
     },
 
     name: {
@@ -60,8 +77,8 @@ User.init(
 
     email: {
       type: DataTypes.STRING,
-      unique: true,
       allowNull: false,
+      unique: true,
       validate: {
         isEmail: true,
       },
@@ -87,31 +104,38 @@ User.init(
       defaultValue: true,
     },
 
-    /**
-     * 🔥 IMPORTANT FOR YOUR FEATURE
-     */
+    mustChangePassword: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: true,
+    },
+
     facultyId: {
       type: DataTypes.INTEGER,
       allowNull: true,
+      references: {
+        model: Faculty,
+        key: "id",
+      },
+      onDelete: "SET NULL",
+      onUpdate: "CASCADE",
     },
 
     departmentId: {
       type: DataTypes.INTEGER,
       allowNull: true,
-    },
-
-    /**
-     * 🔐 Force user to change password after first login
-     */
-    mustChangePassword: {
-      type: DataTypes.BOOLEAN,
-      defaultValue: true,
+      references: {
+        model: Department,
+        key: "id",
+      },
+      onDelete: "SET NULL",
+      onUpdate: "CASCADE",
     },
   },
   {
     sequelize,
     modelName: "User",
     tableName: "users",
+    timestamps: true,
   }
 );
 
