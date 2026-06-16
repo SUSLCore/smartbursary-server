@@ -3,13 +3,7 @@ import { Faculty, Department } from "../models";
 export const seedFacultiesAndDepartments = async () => {
   const faculties = [
     {
-      name: "Faculty of Computing",
-      departments: [
-        "Software Engineering",
-        "Data Science",
-        "Information Systems",
-      ],
-    },
+      name: "Faculty of Computing",departments: [],},
     { name: "Faculty of Applied Sciences", departments: [] },
     { name: "Faculty of Social Sciences & Languages", departments: [] },
     { name: "Faculty of Geomatics", departments: [] },

@@ -11,6 +11,9 @@ export const protect = async (
   res: Response,
   next: NextFunction
 ) => {
+
+  console.log("PROTECT MIDDLEWARE HIT");
+
   try {
     // Accept token from cookie or Authorization header
     const cookieToken = req.cookies?.token;
