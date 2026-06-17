@@ -15,9 +15,6 @@ const startServer = async () => {
     await sequelize.authenticate();
     console.log("Database connected");
 
-    await sequelize.sync({ alter: true });
-    console.log("Models synced");
-
     await seedFacultiesAndDepartments();
     await departmentSeeder();
     await adminSeeder();

@@ -38,6 +38,7 @@ export const login = async (req: Request, res: Response) => {
     res.status(200).json({
       success: true,
       message: "Login successful",
+      role: user.role,
       user,
       token,
     });
@@ -68,6 +69,7 @@ export const getCurrentUser = async (req: any, res: Response) => {
 
     res.status(200).json({
       success: true,
+      message: "User fetched successfully",
       user: safeUser,
     });
   } catch (error: any) {
