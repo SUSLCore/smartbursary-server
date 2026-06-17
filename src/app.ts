@@ -7,6 +7,7 @@ import cookieParser from "cookie-parser";
 import authRoutes from "./routes/auth.routes";
 import facultyRoutes from "./routes/faculty.routes";
 import officerRoutes from "./routes/officer.routes";
+import facultyMARoutes from "./routes/facultyMA.routes";
 
 const app: Application = express();
 
@@ -25,5 +26,6 @@ app.use(cookieParser());
 app.use("/api/auth", authRoutes);
 app.use("/api/faculties", facultyRoutes);
 app.use("/api/officers", officerRoutes);
+app.use("/api/faculty-ma", facultyMARoutes);
 
 export default app;
