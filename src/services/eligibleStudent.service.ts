@@ -8,8 +8,20 @@ import EligibleListUpload from "../models/eligibleListUpload.model";
 
 import { parseExcel } from "../utils/parseExcel";
 
+const toPositiveInteger = (value: unknown) => {
+  if (Array.isArray(value)) {
+    value = value[0];
+  }
+
+  const parsed = Number(value);
+
+  return Number.isInteger(parsed) && parsed > 0
+    ? parsed
+    : null;
+};
+
 interface UploadEligibleStudentsPayload {
-  batchId: number;
+  batchId: number | string;
   facultyId: number;
   departmentId: number;
   uploadedBy: number;
@@ -21,28 +33,56 @@ class EligibleStudentService {
   async uploadEligibleStudents(
     payload: UploadEligibleStudentsPayload
   ) {
+    const {
+      batchId,
+      facultyId,
+      departmentId,
+      uploadedBy,
+      filePath,
+      fileName,
+    } = payload;
+
+    const normalizedFacultyId = toPositiveInteger(facultyId);
+    const normalizedDepartmentId = toPositiveInteger(departmentId);
+    const normalizedUploadedBy = toPositiveInteger(uploadedBy);
+
+    if (!normalizedFacultyId) {
+      throw new Error("facultyId must be a valid positive integer");
+    }
+
+    if (!normalizedDepartmentId) {
+      throw new Error("departmentId must be a valid positive integer");
+    }
+
+    if (!normalizedUploadedBy) {
+      throw new Error("uploadedBy must be a valid positive integer");
+    }
+
     const transaction = await sequelize.transaction();
 
     try {
-      const {
-        batchId,
-        facultyId,
-        departmentId,
-        uploadedBy,
-        filePath,
-        fileName,
-      } = payload;
+      const numericBatchId = toPositiveInteger(batchId);
+      let batch = null;
 
-      // Validate Batch
-      const batch = await Batch.findByPk(batchId);
+      if (numericBatchId) {
+        batch = await Batch.findByPk(numericBatchId);
+      } else {
+        batch = await Batch.findOne({
+          where: {
+            name: String(batchId).trim(),
+          },
+        });
+      }
 
       if (!batch) {
-        throw new Error("Batch not found");
+        throw new Error(
+          "Batch not found. Send a valid batchId or an existing batch name."
+        );
       }
 
       // Validate Department
       const department = await Department.findByPk(
-        departmentId
+        normalizedDepartmentId
       );
 
       if (!department) {
@@ -52,6 +92,12 @@ class EligibleStudentService {
       // Parse Excel
       const parsedStudents =
         parseExcel(filePath);
+
+      console.log("[eligible-upload]", {
+        filePath,
+        parsedStudents: parsedStudents.length,
+        batchRef: batchId,
+      });
 
       if (!parsedStudents.length) {
         throw new Error(
@@ -66,8 +112,8 @@ class EligibleStudentService {
       const previousUploads =
         await EligibleListUpload.findAll({
           where: {
-            batchId,
-            departmentId,
+            batchId: batch.id,
+            departmentId: normalizedDepartmentId,
           },
           transaction,
         });
@@ -91,8 +137,8 @@ class EligibleStudentService {
 
         await EligibleListUpload.destroy({
           where: {
-            batchId,
-            departmentId,
+            batchId: batch.id,
+            departmentId: normalizedDepartmentId,
           },
           transaction,
         });
@@ -105,10 +151,10 @@ class EligibleStudentService {
       const upload =
         await EligibleListUpload.create(
           {
-            batchId,
-            facultyId,
-            departmentId,
-            uploadedBy,
+            batchId: batch.id,
+            facultyId: normalizedFacultyId,
+            departmentId: normalizedDepartmentId,
+            uploadedBy: normalizedUploadedBy,
             fileName,
             totalStudents:
               parsedStudents.length,
@@ -125,8 +171,8 @@ class EligibleStudentService {
           (student: any) => ({
             uploadId: upload.id,
 
-            facultyId,
-            departmentId,
+            facultyId: normalizedFacultyId,
+            departmentId: normalizedDepartmentId,
 
             registerId:
               student.registerId,
@@ -179,19 +225,16 @@ class EligibleStudentService {
         success: true,
         message:
           "Eligible student list uploaded successfully",
-        batchId,
-        departmentId,
+        batchId: batch.id,
+        departmentId: normalizedDepartmentId,
         totalStudents:
           parsedStudents.length,
       };
     } catch (error) {
-      await transaction.rollback();
-
-      if (
-        payload.filePath &&
-        fs.existsSync(payload.filePath)
-      ) {
-        fs.unlinkSync(payload.filePath);
+      try {
+        await transaction.rollback();
+      } catch {
+        // Ignore rollback failures; the original error is what we need to surface.
       }
 
       throw error;
