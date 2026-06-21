@@ -170,6 +170,7 @@ class EligibleStudentService {
         parsedStudents.map(
           (student: any) => ({
             uploadId: upload.id,
+            batchId: batch.id,
 
             facultyId: normalizedFacultyId,
             departmentId: normalizedDepartmentId,
