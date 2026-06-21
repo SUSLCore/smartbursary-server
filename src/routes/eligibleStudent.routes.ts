@@ -23,23 +23,12 @@ router.post(
   eligibleStudentController.uploadEligibleStudents
 );
 
-// router.post(
-//   "/upload",
-//   (req, res, next) => {
-//     console.log("UPLOAD ROUTE HIT");
-//     next();
-//   },
-//   protect,
-//   upload.single("file"),
-//   eligibleStudentController.uploadEligibleStudents
-// );
-
 
 /*
  * Get Department Students
  */
 router.get(
-  "/department/:departmentId",
+  "/department/:departmentId/batch/:batchId",
   protect,
   eligibleStudentController.getDepartmentStudents
 );
