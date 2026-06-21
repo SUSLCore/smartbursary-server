@@ -16,6 +16,11 @@ EligibleStudent.init(
   allowNull:false
  },
 
+batchId:{
+  type:DataTypes.INTEGER,
+  allowNull:false
+},
+
  facultyId:{
   type:DataTypes.INTEGER,
   allowNull:false
