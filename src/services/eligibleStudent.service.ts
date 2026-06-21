@@ -243,16 +243,18 @@ class EligibleStudentService {
   }
 
   async getDepartmentStudents(
-    departmentId: number
-  ) {
-    return await EligibleStudent.findAll({
-      where: {
-        departmentId,
-        isEligible: true,
-      },
-      order: [["studentName", "ASC"]],
-    });
-  }
+  departmentId: number,
+  batchId: number
+) {
+  return await EligibleStudent.findAll({
+    where: {
+      departmentId,
+      batchId,
+      isEligible: true,
+    },
+    order: [["studentName", "ASC"]],
+  });
+}
 
   async getStudentByRegisterId(
     registerId: string
