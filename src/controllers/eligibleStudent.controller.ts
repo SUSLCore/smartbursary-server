@@ -139,13 +139,13 @@ class EligibleStudentController {
         next: NextFunction
     ) => {
         try {
-            const departmentId = Number(
-                req.params.departmentId
-            );
+            const departmentId = Number(req.params.departmentId);
+            const batchId = Number(req.params.batchId);
 
             const students =
                 await eligibleStudentService.getDepartmentStudents(
-                    departmentId
+                    departmentId,
+                    batchId
                 );
 
             return res.status(200).json({
