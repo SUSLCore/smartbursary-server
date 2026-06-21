@@ -73,7 +73,7 @@ EligibleStudent.init(
  indexes:[
   {
    unique:true,
-   fields:["departmentId","registerId"]
+   fields:["departmentId", "batchId","registerId"]
   }
  ]
 }
