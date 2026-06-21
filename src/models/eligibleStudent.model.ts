@@ -16,6 +16,11 @@ EligibleStudent.init(
   allowNull:false
  },
 
+batchId:{
+  type:DataTypes.INTEGER,
+  allowNull:false
+},
+
  facultyId:{
   type:DataTypes.INTEGER,
   allowNull:false
@@ -73,7 +78,7 @@ EligibleStudent.init(
  indexes:[
   {
    unique:true,
-   fields:["departmentId","registerId"]
+   fields:["departmentId", "batchId","registerId"]
   }
  ]
 }
