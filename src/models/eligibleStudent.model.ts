@@ -1,5 +1,6 @@
 import { DataTypes, Model } from "sequelize";
 import sequelize from "../config/database";
+import Batch from "./batch.model";
 
 class EligibleStudent extends Model {}
 
@@ -16,9 +17,15 @@ EligibleStudent.init(
   allowNull:false
  },
 
-batchId:{
-  type:DataTypes.INTEGER,
-  allowNull:false
+batchId: {
+  type: DataTypes.INTEGER,
+  allowNull: false,
+  references: {
+    model: Batch,
+    key: "id",
+  },
+  onDelete: "CASCADE",
+  onUpdate: "CASCADE",
 },
 
  facultyId:{
