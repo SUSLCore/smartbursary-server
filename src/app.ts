@@ -10,6 +10,7 @@ import officerRoutes from "./routes/officer.routes";
 import facultyMARoutes from "./routes/facultyMA.routes";
 import batchRoutes from "./routes/batch.routes";
 import eligibleStudentRoutes from "./routes/eligibleStudent.routes";
+import userrouter from "./routes/user.routes";
 
 const app: Application = express();
 
@@ -31,5 +32,7 @@ app.use("/api/officers", officerRoutes);
 app.use("/api/faculty-ma", facultyMARoutes);
 app.use("/api/batches", batchRoutes);
 app.use("/api/eligible-students", eligibleStudentRoutes);
+app.use("/api/users", userrouter);
+
 
 export default app;
