@@ -1,7 +1,11 @@
 import { DataTypes, Model } from "sequelize";
 import sequelize from "../config/database";
 
-class Department extends Model {}
+class Department extends Model {
+  declare id: number;
+  declare facultyId: number;
+  declare name: string;
+}
 
 Department.init(
   {
