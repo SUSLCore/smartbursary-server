@@ -1,13 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { AdminService } from "../services/admin.service";
 
-
-
-
 export class AdminController {
-
-    
-
 static async getUserByRegisterId(
   req: Request,
   res: Response,
@@ -18,6 +12,13 @@ static async getUserByRegisterId(
 
     const user = await AdminService.getUserByRegisterId(registerId);
 
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
     return res.status(200).json({
       success: true,
       data: user,
@@ -27,7 +28,7 @@ static async getUserByRegisterId(
   }
 }
 
-  static async deleteUserByRegisterId(
+static async deleteUserByRegisterId(
   req: Request,
   res: Response,
   next: NextFunction
@@ -37,6 +38,13 @@ static async getUserByRegisterId(
 
     const result =
       await AdminService.deleteUserByRegisterId(registerId);
+
+    if (!result) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
 
     return res.status(200).json({
       success: true,
