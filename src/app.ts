@@ -11,6 +11,7 @@ import facultyMARoutes from "./routes/facultyMA.routes";
 import batchRoutes from "./routes/batch.routes";
 import eligibleStudentRoutes from "./routes/eligibleStudent.routes";
 import userrouter from "./routes/user.routes";
+import adminRoutes from "./routes/admin.routes";
 
 const app: Application = express();
 
@@ -33,6 +34,7 @@ app.use("/api/faculty-ma", facultyMARoutes);
 app.use("/api/batches", batchRoutes);
 app.use("/api/eligible-students", eligibleStudentRoutes);
 app.use("/api/users", userrouter);
+app.use("/api/admin", adminRoutes);
 
 
 export default app;
