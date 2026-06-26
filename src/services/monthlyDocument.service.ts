@@ -20,6 +20,13 @@ export interface CreateMonthlyDocumentPayload {
     file: Express.Multer.File;
 }
 
+export interface UploadSignedDocumentPayload {
+    documentId: number;
+    uploadedBy: number;
+    file: Express.Multer.File;
+    remarks?: string;
+}
+
 export class MonthlyDocumentService {
 
     private static async createHistory(
@@ -63,36 +70,24 @@ export class MonthlyDocumentService {
                 file,
             } = payload;
 
-            /*
-             * Validate Batch
-             */
             const batch = await Batch.findByPk(batchId);
 
             if (!batch) {
                 throw new Error("Batch not found.");
             }
 
-            /*
-             * Validate Department
-             */
             const department = await Department.findByPk(departmentId);
 
             if (!department) {
                 throw new Error("Department not found.");
             }
 
-            /*
-             * Validate User
-             */
             const user = await User.findByPk(uploadedBy);
 
             if (!user) {
                 throw new Error("User not found.");
             }
 
-            /*
-             * Prevent duplicate monthly upload
-             */
             const existingDocument = await MonthlyDocument.findOne({
                 where: {
                     batchId,
@@ -108,22 +103,13 @@ export class MonthlyDocumentService {
                 );
             }
 
-            /*
-             * Determine file extension
-             */
             const extension = FileStorage.getExtension(file.originalname);
 
-            /*
-             * Generate workflow filename
-             */
             const fileName = FileStorage.getWorkflowFileName(
                 DocumentStep.FACULTY_MA_UPLOAD,
                 extension
             );
 
-            /*
-             * Absolute storage path
-             */
             absoluteFilePath = FileStorage.buildMonthlyFilePath(
                 year,
                 month,
@@ -132,9 +118,6 @@ export class MonthlyDocumentService {
                 fileName
             );
 
-            /*
-             * Relative path for database
-             */
             const relativePath = FileStorage.buildRelativePath(
                 year,
                 month,
@@ -143,17 +126,11 @@ export class MonthlyDocumentService {
                 fileName
             );
 
-            /*
-             * Save uploaded file
-             */
             await fs.writeFile(
                 absoluteFilePath,
                 file.buffer
             );
 
-            /*
-             * Determine first workflow step
-             */
             const nextStep =
                 DocumentWorkflow.getNextStep(
                     DocumentStep.FACULTY_MA_UPLOAD
@@ -163,9 +140,6 @@ export class MonthlyDocumentService {
                 throw new Error("Workflow configuration error.");
             }
 
-            /*
-             * Create MonthlyDocument
-             */
             const monthlyDocument =
                 await MonthlyDocument.create(
                     {
@@ -187,7 +161,6 @@ export class MonthlyDocumentService {
                         transaction,
                     }
                 );
-
 
             await this.createHistory(
                 transaction,
@@ -241,7 +214,6 @@ export class MonthlyDocumentService {
         }
     }
 
-
     static async getDocumentById(id: number) {
         const document = await MonthlyDocument.findByPk(id, {
             include: [
@@ -257,26 +229,195 @@ export class MonthlyDocumentService {
                 },
             ],
         });
-
         if (!document) {
             throw new Error("Monthly document not found.");
         }
-
         return document;
     }
 
 
+    static async uploadSignedDocument(
+        payload: UploadSignedDocumentPayload
+    ) {
+
+        const transaction = await sequelize.transaction();
+
+        let absoluteFilePath: string | null = null;
+        let transactionCommitted = false;
 
 
+        try {
 
+            const {
 
+                documentId,
+                uploadedBy,
+                file,
+                remarks
+            } = payload;
 
+            const user = await User.findByPk(
+                uploadedBy,
+                {
+                    transaction
+                }
+            );
 
+            if (!user) {
+                throw new Error("User not found.");
+            }
 
+            const monthlyDocument =
+                await MonthlyDocument.findByPk(
+                    documentId,
+                    {
+                        transaction
+                    }
+                );
 
+            if (!monthlyDocument) {
+                throw new Error(
+                    "Monthly document not found."
+                );
+            }
 
+            if (
+                !DocumentWorkflow.isValidStep(
+                    monthlyDocument.currentStep
+                )
+            ) {
+                throw new Error(
+                    "Invalid workflow state."
+                );
+            }
 
+            const extension =
+                FileStorage.getExtension(
+                    file.originalname
+                );
 
+            const fileName =
+                FileStorage.getWorkflowFileName(
+                    monthlyDocument.currentStep,
+                    extension
+                );
 
+            absoluteFilePath =
+                FileStorage.buildMonthlyFilePath(
+
+                    monthlyDocument.year,
+
+                    monthlyDocument.month,
+
+                    monthlyDocument.batchId,
+
+                    monthlyDocument.departmentId,
+
+                    fileName
+
+                );
+
+            const relativePath =
+                FileStorage.buildRelativePath(
+
+                    monthlyDocument.year,
+
+                    monthlyDocument.month,
+
+                    monthlyDocument.batchId,
+
+                    monthlyDocument.departmentId,
+
+                    fileName
+
+                );
+
+            await fs.writeFile(
+                absoluteFilePath,
+                file.buffer
+            );
+
+            monthlyDocument.currentFile =
+                relativePath;
+
+            await this.createHistory(
+                transaction,
+                {
+                    documentId: monthlyDocument.id,
+
+                    uploadedBy,
+
+                    step: monthlyDocument.currentStep,
+
+                    filePath: relativePath,
+
+                    remarks:
+                        remarks ??
+                        `${monthlyDocument.currentStep} completed.`,
+                }
+            );
+
+            const nextStep =
+                DocumentWorkflow.getNextStep(
+                    monthlyDocument.currentStep
+                );
+
+            if (nextStep) {
+
+                monthlyDocument.currentStep =
+                    nextStep;
+
+            } else {
+
+                monthlyDocument.status =
+                    "COMPLETED";
+
+            }
+
+            await monthlyDocument.save({
+                transaction,
+            });
+
+            await transaction.commit();
+            transactionCommitted = true;
+
+            const updatedDocument =
+                await MonthlyDocument.findByPk(
+                    monthlyDocument.id,
+                    {
+                        include: [
+                            {
+                                model: Batch,
+                            },
+                            {
+                                model: Department,
+                            },
+                            {
+                                model: User,
+                                attributes: [
+                                    "id",
+                                    "name",
+                                    "registerId",
+                                ],
+                            },
+                        ],
+                    }
+                );
+
+            return updatedDocument;
+
+        } catch (error) {
+
+            if (!transactionCommitted) {
+                await transaction.rollback();
+            }
+
+            if (absoluteFilePath) {
+                FileStorage.deleteAbsoluteFile(absoluteFilePath);
+            }
+
+            throw error;
+        }
+    }
 
 }
