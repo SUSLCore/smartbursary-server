@@ -10,6 +10,7 @@ import { DocumentWorkflow } from "../utils/documentWorkflow";
 import { FileStorage } from "../utils/fileStorage";
 import fs from "fs/promises";
 import { UserRole } from "../types/user.types";
+import path from "path";
 
 export interface CreateMonthlyDocumentPayload {
     batchId: number;
@@ -593,15 +594,9 @@ export class MonthlyDocumentService {
             );
 
         return {
-
-            path: filePath,
-
-            fileName:
-                document.currentFile
-                    .split("/")
-                    .pop(),
-
-        };
+        path: filePath,
+        fileName: path.basename(document.currentFile),
+    };
     }
 
 
