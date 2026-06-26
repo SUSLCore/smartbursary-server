@@ -1,4 +1,4 @@
-import { Transaction } from "sequelize";
+import { Transaction, Op, WhereOptions } from "sequelize";
 import sequelize from "../config/database";
 import Batch from "../models/batch.model";
 import Department from "../models/department.model";
@@ -9,7 +9,7 @@ import { DocumentStep } from "../enums/DocumentStep";
 import { DocumentWorkflow } from "../utils/documentWorkflow";
 import { FileStorage } from "../utils/fileStorage";
 import fs from "fs/promises";
-
+import { UserRole } from "../types/user.types";
 
 export interface CreateMonthlyDocumentPayload {
     batchId: number;
@@ -419,5 +419,113 @@ export class MonthlyDocumentService {
             throw error;
         }
     }
+
+
+    static async getPendingDocuments(userId: number) {
+
+        const user = await User.findByPk(userId);
+
+        if (!user) {
+            throw new Error("User not found.");
+        }
+
+        const workflowSteps =
+            DocumentWorkflow.getStepsByRole(
+                user.role as UserRole
+            );
+
+        if (workflowSteps.length === 0) {
+            return [];
+        }
+
+        const whereClause: WhereOptions = {
+
+            currentStep: {
+                [Op.in]: workflowSteps,
+            },
+
+            status: "PENDING",
+        };
+
+        if (
+            user.role === UserRole.FACULTY_AR ||
+            user.role === UserRole.FACULTY_MA
+        ) {
+
+            Object.assign(whereClause, {
+
+                "$Department.facultyId$":
+                    user.facultyId,
+
+            });
+
+        }
+
+        if (
+            user.role === UserRole.DEPARTMENT_HEAD ||
+            user.role === UserRole.DEPARTMENT_MA
+        ) {
+
+            Object.assign(whereClause, {
+
+                departmentId:
+                    user.departmentId,
+
+            });
+
+        }
+
+        const documents =
+            await MonthlyDocument.findAll({
+
+                where: whereClause,
+
+                include: [
+
+                    {
+                        model: Batch,
+                        attributes: [
+                            "id",
+                            "name",
+                        ],
+                    },
+
+                    {
+                        model: Department,
+                        attributes: [
+                            "id",
+                            "name",
+                            "facultyId",
+                        ],
+                    },
+
+                    {
+                        model: User,
+                        attributes: [
+                            "id",
+                            "name",
+                            "registerId",
+                        ],
+                    },
+
+                ],
+
+                order: [
+
+                    ["year", "DESC"],
+
+                    ["month", "DESC"],
+
+                    ["createdAt", "DESC"],
+
+                ],
+
+            });
+
+        return documents;
+    }
+
+
+
 
 }

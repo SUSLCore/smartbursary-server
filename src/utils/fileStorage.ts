@@ -152,8 +152,8 @@ export class FileStorage {
             case DocumentStep.SAR_APPROVAL:
                 return `sar_signed${extension}`;
 
-            case DocumentStep.FACULTY_ASR_APPROVAL:
-                return `faculty_asr_signed${extension}`;
+            case DocumentStep.FACULTY_AR_APPROVAL:
+                return `faculty_ar_signed${extension}`;
 
             case DocumentStep.DEPARTMENT_HEAD_APPROVAL:
                 return `department_head_signed${extension}`;
@@ -164,8 +164,8 @@ export class FileStorage {
             case DocumentStep.DEPARTMENT_HEAD_RETURN:
                 return `department_head_return${extension}`;
 
-            case DocumentStep.FACULTY_ASR_RETURN:
-                return `faculty_asr_return${extension}`;
+            case DocumentStep.FACULTY_AR_RETURN:
+                return `faculty_ar_return${extension}`;
 
             case DocumentStep.SAR_RETURN:
                 return `sar_return${extension}`;
