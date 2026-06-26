@@ -525,7 +525,254 @@ export class MonthlyDocumentService {
         return documents;
     }
 
+    static async getDocumentHistory(
+        documentId: number
+    ) {
+
+        const document =
+            await MonthlyDocument.findByPk(
+                documentId
+            );
+
+        if (!document) {
+            throw new Error(
+                "Monthly document not found."
+            );
+        }
 
 
+        const history =
+            await DocumentHistory.findAll({
+
+                where: {
+                    documentId,
+                },
+
+                include: [
+
+                    {
+                        model: User,
+                        attributes: [
+                            "id",
+                            "name",
+                            "registerId",
+                            "role",
+                        ],
+                    },
+
+                ],
+
+                order: [
+                    ["createdAt", "ASC"],
+                ],
+
+            });
+
+        return history;
+    }
+
+
+    static async downloadCurrentDocument(
+        documentId: number
+    ) {
+
+        const document =
+            await MonthlyDocument.findByPk(
+                documentId
+            );
+
+        if (!document) {
+            throw new Error(
+                "Monthly document not found."
+            );
+        }
+
+        const filePath =
+            FileStorage.getAbsolutePath(
+                document.currentFile
+            );
+
+        return {
+
+            path: filePath,
+
+            fileName:
+                document.currentFile
+                    .split("/")
+                    .pop(),
+
+        };
+    }
+
+
+    static async getMonthlyDocumentStatistics(userId: number) {
+
+        const user = await User.findByPk(userId);
+
+        if (!user) {
+            throw new Error("User not found.");
+        }
+
+        const workflowSteps =
+            DocumentWorkflow.getStepsByRole(
+                user.role as UserRole
+            );
+
+        const whereClause: any = {};
+
+        if (
+            user.role === UserRole.FACULTY_AR ||
+            user.role === UserRole.FACULTY_MA
+        ) {
+
+            whereClause["$Department.facultyId$"] =
+                user.facultyId;
+
+        }
+
+        if (
+            user.role === UserRole.DEPARTMENT_HEAD ||
+            user.role === UserRole.DEPARTMENT_MA
+        ) {
+
+            whereClause.departmentId =
+                user.departmentId;
+
+        }
+
+        const now = new Date();
+
+        const currentMonth = now.getMonth() + 1;
+
+        const currentYear = now.getFullYear();
+
+        const total =
+            await MonthlyDocument.count({
+
+                where: whereClause,
+
+                include: [
+                    {
+                        model: Department,
+                        attributes: [],
+                    },
+                ],
+
+            });
+
+        const pending =
+            await MonthlyDocument.count({
+
+                where: {
+
+                    ...whereClause,
+
+                    status: "PENDING",
+
+                    currentStep: {
+
+                        [Op.in]: workflowSteps,
+
+                    },
+
+                },
+
+                include: [
+                    {
+                        model: Department,
+                        attributes: [],
+                    },
+                ],
+
+            });
+
+        const completed =
+            await MonthlyDocument.count({
+
+                where: {
+
+                    ...whereClause,
+
+                    status: "COMPLETED",
+
+                },
+
+                include: [
+                    {
+                        model: Department,
+                        attributes: [],
+                    },
+                ],
+
+            });
+
+        const thisMonth =
+            await MonthlyDocument.count({
+
+                where: {
+
+                    ...whereClause,
+
+                    month: currentMonth,
+
+                    year: currentYear,
+
+                },
+
+                include: [
+                    {
+                        model: Department,
+                        attributes: [],
+                    },
+                ],
+
+            });
+
+        const returned =
+            await MonthlyDocument.count({
+
+                where: {
+
+                    ...whereClause,
+
+                    currentStep: {
+
+                        [Op.in]: [
+
+                            DocumentStep.DEPARTMENT_HEAD_RETURN,
+
+                            DocumentStep.FACULTY_AR_RETURN,
+
+                            DocumentStep.SAR_RETURN,
+
+                        ],
+
+                    },
+
+                },
+
+                include: [
+                    {
+                        model: Department,
+                        attributes: [],
+                    },
+                ],
+
+            });
+
+        return {
+
+            total,
+
+            pending,
+
+            completed,
+
+            thisMonth,
+
+            returned,
+
+        };
+    }
 
 }
