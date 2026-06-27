@@ -11,6 +11,7 @@ import { FileStorage } from "../utils/fileStorage";
 import fs from "fs/promises";
 import { UserRole } from "../types/user.types";
 import path from "path";
+import { MonthlyDocumentExistsError } from "../errors/MonthlyDocumentExistsError";
 
 export interface CreateMonthlyDocumentPayload {
     batchId: number;
@@ -60,6 +61,7 @@ export class MonthlyDocumentService {
         const transaction = await sequelize.transaction();
 
         let absoluteFilePath: string | null = null;
+        let committed = false;
 
         try {
             const {
@@ -99,8 +101,15 @@ export class MonthlyDocumentService {
             });
 
             if (existingDocument) {
-                throw new Error(
-                    "Monthly document already uploaded for this department."
+
+                const canDelete =
+                    existingDocument.currentStep ===
+                    DocumentStep.SAR_APPROVAL;
+
+                throw new MonthlyDocumentExistsError(
+                    "Monthly document already exists.",
+                    existingDocument.id,
+                    canDelete
                 );
             }
 
@@ -179,6 +188,7 @@ export class MonthlyDocumentService {
             );
 
             await transaction.commit();
+            committed = true;
 
             const createdDocument = await MonthlyDocument.findByPk(
                 monthlyDocument.id,
@@ -205,7 +215,12 @@ export class MonthlyDocumentService {
             return createdDocument;
 
         } catch (error) {
-            await transaction.rollback();
+
+            console.error("Original Error:", error);
+
+            if (!committed) {
+                await transaction.rollback();
+            }
 
             if (absoluteFilePath) {
                 FileStorage.deleteAbsoluteFile(absoluteFilePath);
@@ -594,9 +609,9 @@ export class MonthlyDocumentService {
             );
 
         return {
-        path: filePath,
-        fileName: path.basename(document.currentFile),
-    };
+            path: filePath,
+            fileName: path.basename(document.currentFile),
+        };
     }
 
 
