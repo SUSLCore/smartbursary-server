@@ -11,6 +11,7 @@ import { FileStorage } from "../utils/fileStorage";
 import fs from "fs/promises";
 import { UserRole } from "../types/user.types";
 import path from "path";
+import { MonthlyDocumentExistsError } from "../errors/MonthlyDocumentExistsError";
 
 export interface CreateMonthlyDocumentPayload {
     batchId: number;
@@ -100,8 +101,15 @@ export class MonthlyDocumentService {
             });
 
             if (existingDocument) {
-                throw new Error(
-                    "Monthly document already uploaded for this department."
+
+                const canDelete =
+                    existingDocument.currentStep ===
+                    DocumentStep.SAR_APPROVAL;
+
+                throw new MonthlyDocumentExistsError(
+                    "Monthly document already exists.",
+                    existingDocument.id,
+                    canDelete
                 );
             }
 
