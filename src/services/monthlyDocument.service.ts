@@ -60,6 +60,7 @@ export class MonthlyDocumentService {
         const transaction = await sequelize.transaction();
 
         let absoluteFilePath: string | null = null;
+        let committed = false;
 
         try {
             const {
@@ -179,6 +180,7 @@ export class MonthlyDocumentService {
             );
 
             await transaction.commit();
+            committed = true;
 
             const createdDocument = await MonthlyDocument.findByPk(
                 monthlyDocument.id,
@@ -205,7 +207,12 @@ export class MonthlyDocumentService {
             return createdDocument;
 
         } catch (error) {
-            await transaction.rollback();
+
+            console.error("Original Error:", error);
+
+            if (!committed) {
+                await transaction.rollback();
+            }
 
             if (absoluteFilePath) {
                 FileStorage.deleteAbsoluteFile(absoluteFilePath);
@@ -594,9 +601,9 @@ export class MonthlyDocumentService {
             );
 
         return {
-        path: filePath,
-        fileName: path.basename(document.currentFile),
-    };
+            path: filePath,
+            fileName: path.basename(document.currentFile),
+        };
     }
 
 
