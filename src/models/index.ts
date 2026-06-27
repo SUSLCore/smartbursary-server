@@ -19,22 +19,20 @@ User.belongsTo(Department, { foreignKey: "departmentId" });
 Batch.hasMany(EligibleStudent, {foreignKey: "batchId",});
 EligibleStudent.belongsTo(Batch, {foreignKey: "batchId",});
 
-MonthlyDocument.hasMany(DocumentHistory, {
-  foreignKey: "documentId",
-  as: "history",
-});
+MonthlyDocument.hasMany(DocumentHistory, {foreignKey: "documentId",});
+DocumentHistory.belongsTo(MonthlyDocument, {foreignKey: "documentId",});
 
-DocumentHistory.belongsTo(MonthlyDocument, {
-  foreignKey: "documentId",
-});
+User.hasMany(DocumentHistory, {foreignKey: "uploadedBy",});
+DocumentHistory.belongsTo(User, {foreignKey: "uploadedBy",});
 
-User.hasMany(DocumentHistory, {
-  foreignKey: "uploadedBy",
-});
+Batch.hasMany(MonthlyDocument, {foreignKey: "batchId",});
+MonthlyDocument.belongsTo(Batch, {foreignKey: "batchId",});
 
-DocumentHistory.belongsTo(User, {
-  foreignKey: "uploadedBy",
-});
+Department.hasMany(MonthlyDocument, {foreignKey: "departmentId",});
+MonthlyDocument.belongsTo(Department, {foreignKey: "departmentId",});
+
+User.hasMany(MonthlyDocument, {foreignKey: "uploadedBy",});
+MonthlyDocument.belongsTo(User, {foreignKey: "uploadedBy",});
 
 export {
   Faculty,

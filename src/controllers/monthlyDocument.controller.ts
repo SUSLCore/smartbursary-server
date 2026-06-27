@@ -1,296 +1,313 @@
 import { Request, Response } from "express";
 import { AuthRequest } from "../types/authRequest";
 import { MonthlyDocumentService } from "../services/monthlyDocument.service";
-import path from "path";
+import { MonthlyDocumentExistsError } from "../errors/MonthlyDocumentExistsError";
+
 
 export class MonthlyDocumentController {
 
     static async createMonthlyDocument(
-    req: AuthRequest,
-    res: Response
-) {
-    try {
+        req: AuthRequest,
+        res: Response
+    ) {
+        try {
 
-        if (!req.file) {
-            return res.status(400).json({
-                success: false,
-                message: "Please upload a document.",
+            if (!req.file) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Please upload a document.",
+                });
+            }
+
+            const document =
+                await MonthlyDocumentService.createMonthlyDocument({
+
+                    batchId: Number(req.body.batchId),
+
+                    departmentId: Number(req.body.departmentId),
+
+                    month: Number(req.body.month),
+
+                    year: Number(req.body.year),
+
+                    uploadedBy: req.user!.id,
+
+                    file: req.file,
+
+                });
+
+            return res.status(201).json({
+
+                success: true,
+
+                message:
+                    "Monthly document uploaded successfully.",
+
+                data: document,
+
             });
-        }
 
-        const document =
-            await MonthlyDocumentService.createMonthlyDocument({
+        } catch (error: any) {
 
-                batchId: Number(req.body.batchId),
+            if (error instanceof MonthlyDocumentExistsError) {
 
-                departmentId: Number(req.body.departmentId),
+                return res.status(400).json({
 
-                month: Number(req.body.month),
+                    success: false,
 
-                year: Number(req.body.year),
+                    message: error.message,
 
-                uploadedBy: req.user!.id,
+                    documentId: error.documentId,
 
-                file: req.file,
+                    canDelete: error.canDelete,
 
-            });
+                });
 
-        return res.status(201).json({
-
-            success: true,
-
-            message:
-                "Monthly document uploaded successfully.",
-
-            data: document,
-
-        });
-
-    } catch (error: any) {
-
-        return res.status(400).json({
-
-            success: false,
-
-            message: error.message,
-
-        });
-
-    }
-}
-
-
-static async uploadSignedDocument(
-    req: AuthRequest,
-    res: Response
-) {
-    try {
-
-        if (!req.file) {
+            }
 
             return res.status(400).json({
 
                 success: false,
 
-                message: "Please upload a signed document.",
+                message: error.message,
 
             });
 
         }
+    }
 
-        const document =
-            await MonthlyDocumentService.uploadSignedDocument({
 
-                documentId:
-                    Number(req.params.id),
+    static async uploadSignedDocument(
+        req: AuthRequest,
+        res: Response
+    ) {
+        try {
 
-                uploadedBy:
-                    req.user!.id,
+            if (!req.file) {
 
-                remarks:
-                    req.body.remarks,
+                return res.status(400).json({
 
-                file:
-                    req.file,
+                    success: false,
+
+                    message: "Please upload a signed document.",
+
+                });
+
+            }
+
+            const document =
+                await MonthlyDocumentService.uploadSignedDocument({
+
+                    documentId:
+                        Number(req.params.id),
+
+                    uploadedBy:
+                        req.user!.id,
+
+                    remarks:
+                        req.body.remarks,
+
+                    file:
+                        req.file,
+
+                });
+
+            return res.json({
+
+                success: true,
+
+                message:
+                    "Document uploaded successfully.",
+
+                data: document,
 
             });
 
-        return res.json({
+        } catch (error: any) {
 
-            success: true,
+            return res.status(400).json({
 
-            message:
-                "Document uploaded successfully.",
+                success: false,
 
-            data: document,
+                message: error.message,
 
-        });
+            });
 
-    } catch (error: any) {
-
-        return res.status(400).json({
-
-            success: false,
-
-            message: error.message,
-
-        });
-
+        }
     }
-}
 
 
-static async getPendingDocuments(
-    req: AuthRequest,
-    res: Response
-) {
-    try {
+    static async getPendingDocuments(
+        req: AuthRequest,
+        res: Response
+    ) {
+        try {
 
-        const documents =
-            await MonthlyDocumentService.getPendingDocuments(
-                req.user!.id
-            );
+            const documents =
+                await MonthlyDocumentService.getPendingDocuments(
+                    req.user!.id
+                );
 
-        return res.json({
+            return res.json({
 
-            success: true,
+                success: true,
 
-            data: documents,
+                data: documents,
 
-        });
+            });
 
-    } catch (error: any) {
+        } catch (error: any) {
 
-        return res.status(400).json({
+            return res.status(400).json({
 
-            success: false,
+                success: false,
 
-            message: error.message,
+                message: error.message,
 
-        });
+            });
 
+        }
     }
-}
 
 
-static async getDocument(
-    req: Request,
-    res: Response
-) {
-    try {
+    static async getDocument(
+        req: Request,
+        res: Response
+    ) {
+        try {
 
-        const document =
-            await MonthlyDocumentService.getDocumentById(
+            const document =
+                await MonthlyDocumentService.getDocumentById(
 
-                Number(req.params.id)
+                    Number(req.params.id)
 
-            );
+                );
 
-        return res.json({
+            return res.json({
 
-            success: true,
+                success: true,
 
-            data: document,
+                data: document,
 
-        });
+            });
 
-    } catch (error: any) {
+        } catch (error: any) {
 
-        return res.status(404).json({
+            return res.status(404).json({
 
-            success: false,
+                success: false,
 
-            message: error.message,
+                message: error.message,
 
-        });
+            });
 
+        }
     }
-}
 
 
-static async getHistory(
-    req: Request,
-    res: Response
-) {
-    try {
+    static async getHistory(
+        req: Request,
+        res: Response
+    ) {
+        try {
 
-        const history =
-            await MonthlyDocumentService.getDocumentHistory(
+            const history =
+                await MonthlyDocumentService.getDocumentHistory(
 
-                Number(req.params.id)
+                    Number(req.params.id)
 
-            );
+                );
 
-        return res.json({
+            return res.json({
 
-            success: true,
+                success: true,
 
-            data: history,
+                data: history,
 
-        });
+            });
 
-    } catch (error: any) {
+        } catch (error: any) {
 
-        return res.status(404).json({
+            return res.status(404).json({
 
-            success: false,
+                success: false,
 
-            message: error.message,
+                message: error.message,
 
-        });
+            });
 
+        }
     }
-}
 
 
-static async downloadCurrentDocument(
-    req: Request,
-    res: Response
-) {
-    try {
+    static async downloadCurrentDocument(
+        req: Request,
+        res: Response
+    ) {
+        try {
 
-        const document =
-            await MonthlyDocumentService.downloadCurrentDocument(
+            const document =
+                await MonthlyDocumentService.downloadCurrentDocument(
 
-                Number(req.params.id)
+                    Number(req.params.id)
+
+                );
+
+            return res.download(
+
+                document.path,
+
+                document.fileName
 
             );
 
-        return res.download(
+        } catch (error: any) {
 
-            document.path,
+            return res.status(404).json({
 
-            document.fileName
+                success: false,
 
-        );
+                message: error.message,
 
-    } catch (error: any) {
+            });
 
-        return res.status(404).json({
-
-            success: false,
-
-            message: error.message,
-
-        });
-
+        }
     }
-}
 
 
-static async getStatistics(
-    req: AuthRequest,
-    res: Response
-) {
-    try {
+    static async getStatistics(
+        req: AuthRequest,
+        res: Response
+    ) {
+        try {
 
-        const statistics =
-            await MonthlyDocumentService.getMonthlyDocumentStatistics(
+            const statistics =
+                await MonthlyDocumentService.getMonthlyDocumentStatistics(
 
-                req.user!.id
+                    req.user!.id
 
-            );
+                );
 
-        return res.json({
+            return res.json({
 
-            success: true,
+                success: true,
 
-            data: statistics,
+                data: statistics,
 
-        });
+            });
 
-    } catch (error: any) {
+        } catch (error: any) {
 
-        return res.status(400).json({
+            return res.status(400).json({
 
-            success: false,
+                success: false,
 
-            message: error.message,
+                message: error.message,
 
-        });
+            });
 
+        }
     }
-}
 
 
 }
