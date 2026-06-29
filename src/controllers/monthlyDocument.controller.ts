@@ -82,6 +82,7 @@ export class MonthlyDocumentController {
         res: Response
     ) {
         try {
+            console.log("Controller reached");
 
             if (!req.file) {
 
@@ -125,6 +126,10 @@ export class MonthlyDocumentController {
 
         } catch (error: any) {
 
+            console.log("========================");
+            console.log(error);
+            console.log(error.message);
+            console.log("========================");
             return res.status(400).json({
 
                 success: false,
