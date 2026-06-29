@@ -307,6 +307,16 @@ export class MonthlyDocumentService {
                 );
             }
 
+            if (
+                !DocumentWorkflow.canRoleHandleStep(
+                    user.role,
+                    monthlyDocument.currentStep
+                )
+            ) {
+                throw new Error(
+                    `User role '${user.role}' is not allowed to perform '${monthlyDocument.currentStep}'.`
+                );
+            }
             const extension =
                 FileStorage.getExtension(
                     file.originalname
