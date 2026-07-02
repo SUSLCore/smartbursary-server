@@ -47,6 +47,17 @@ router.put(
     MonthlyDocumentController.replaceUploadedDocument
 );
 
+router.put(
+    "/:id/return",
+    protect,
+    authorize(
+        UserRole.FACULTY_AR,
+        UserRole.DEPARTMENT_HEAD,
+        UserRole.DEPARTMENT_MA
+    ),
+    MonthlyDocumentController.returnDocument
+);
+
 router.get(
     "/pending",
     protect,

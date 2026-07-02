@@ -190,6 +190,45 @@ export class MonthlyDocumentController {
         }
     }
 
+    static async returnDocument(
+        req: AuthRequest,
+        res: Response
+    ) {
+        try {
+
+            const document =
+                await MonthlyDocumentService.returnDocument({
+
+                    documentId: Number(req.params.id),
+
+                    returnedBy: req.user!.id,
+
+                    remarks: req.body.remarks,
+
+                });
+
+            return res.status(200).json({
+
+                success: true,
+
+                message: "Document returned successfully.",
+
+                data: document,
+
+            });
+
+        } catch (error: any) {
+
+            return res.status(400).json({
+
+                success: false,
+
+                message: error.message,
+
+            });
+
+        }
+    }
 
     static async getPendingDocuments(
         req: AuthRequest,
