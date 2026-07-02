@@ -11,11 +11,6 @@ import { UserRole } from "../types/user.types";
 
 const router = Router();
 
-/*
-|--------------------------------------------------------------------------
-| Faculty MA - Initial Upload
-|--------------------------------------------------------------------------
-*/
 
 router.post(
     "/",
@@ -24,12 +19,6 @@ router.post(
     monthlyDocumentUpload.single("file"),
     MonthlyDocumentController.createMonthlyDocument
 );
-
-/*
-|--------------------------------------------------------------------------
-| Upload Signed Document
-|--------------------------------------------------------------------------
-*/
 
 router.put(
     "/:id/sign",
@@ -44,11 +33,19 @@ router.put(
     MonthlyDocumentController.uploadSignedDocument
 );
 
-/*
-|--------------------------------------------------------------------------
-| Pending Documents
-|--------------------------------------------------------------------------
-*/
+router.put(
+    "/:id/replace",
+    protect,
+    authorize(
+        UserRole.FACULTY_MA,
+        UserRole.STUDENT_SERVICE_SAR,
+        UserRole.FACULTY_AR,
+        UserRole.DEPARTMENT_HEAD,
+        UserRole.DEPARTMENT_MA
+    ),
+    monthlyDocumentUpload.single("file"),
+    MonthlyDocumentController.replaceUploadedDocument
+);
 
 router.get(
     "/pending",
@@ -62,12 +59,6 @@ router.get(
     ),
     MonthlyDocumentController.getPendingDocuments
 );
-
-/*
-|--------------------------------------------------------------------------
-| Dashboard Statistics
-|--------------------------------------------------------------------------
-*/
 
 router.get(
     "/statistics",
@@ -83,12 +74,6 @@ router.get(
     MonthlyDocumentController.getStatistics
 );
 
-/*
-|--------------------------------------------------------------------------
-| Document History
-|--------------------------------------------------------------------------
-*/
-
 router.get(
     "/:id/history",
     protect,
@@ -103,12 +88,6 @@ router.get(
     MonthlyDocumentController.getHistory
 );
 
-/*
-|--------------------------------------------------------------------------
-| Download Current Document
-|--------------------------------------------------------------------------
-*/
-
 router.get(
     "/:id/download",
     protect,
@@ -122,12 +101,6 @@ router.get(
     ),
     MonthlyDocumentController.downloadCurrentDocument
 );
-
-/*
-|--------------------------------------------------------------------------
-| Get Single Document
-|--------------------------------------------------------------------------
-*/
 
 router.get(
     "/:id",
