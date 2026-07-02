@@ -29,6 +29,14 @@ export interface UploadSignedDocumentPayload {
     remarks?: string;
 }
 
+export interface ReplaceUploadedDocumentPayload {
+    documentId: number;
+    uploadedBy: number;
+    file: Express.Multer.File;
+    remarks?: string;
+}
+
+
 export class MonthlyDocumentService {
 
     private static async createHistory(
@@ -444,6 +452,314 @@ export class MonthlyDocumentService {
 
             throw error;
         }
+    }
+
+
+
+    static async replaceUploadedDocument(
+        payload: ReplaceUploadedDocumentPayload
+    ) {
+
+        const transaction = await sequelize.transaction();
+
+        let absoluteFilePath: string | null = null;
+        let transactionCommitted = false;
+
+        let monthlyDocument: MonthlyDocument | null = null;
+        let latestHistory: DocumentHistory | null = null;
+
+        try {
+
+            const {
+
+                documentId,
+
+                uploadedBy,
+
+                file,
+
+                remarks
+
+            } = payload;
+
+            /*
+             * Validate user
+             */
+
+            const user = await User.findByPk(
+                uploadedBy,
+                { transaction }
+            );
+
+            if (!user) {
+                throw new Error("User not found.");
+            }
+
+            /*
+             * Find monthly document
+             */
+
+            monthlyDocument =
+                await MonthlyDocument.findByPk(
+                    documentId,
+                    { transaction }
+                );
+
+            if (!monthlyDocument) {
+                throw new Error(
+                    "Monthly document not found."
+                );
+            }
+
+            /*
+             * Find latest history
+             */
+
+            const latestHistory =
+                await DocumentHistory.findOne({
+
+                    where: {
+                        documentId,
+                    },
+
+                    order: [
+                        ["createdAt", "DESC"],
+                    ],
+
+                    transaction,
+
+                });
+
+            if (!latestHistory) {
+                throw new Error(
+                    "Document history not found."
+                );
+            }
+
+            /*
+             * Only the last uploader
+             * can replace the upload.
+             */
+
+            if (
+                latestHistory.uploadedBy !== uploadedBy
+            ) {
+
+                throw new Error(
+                    "Only the last uploader can replace this document."
+                );
+
+            }
+
+            /*
+             * Ensure workflow
+             * hasn't moved.
+             */
+
+            const expectedCurrentStep =
+                DocumentWorkflow.getNextStep(
+                    latestHistory.step
+                );
+
+            if (
+                monthlyDocument.currentStep !==
+                expectedCurrentStep
+            ) {
+
+                throw new Error(
+                    "This document has already been processed by the next approver and can no longer be replaced."
+                );
+
+            }
+
+            /*
+             * Generate filename
+             */
+
+            const extension =
+                FileStorage.getExtension(
+                    file.originalname
+                );
+
+            const fileName =
+                FileStorage.getWorkflowFileName(
+                    latestHistory.step,
+                    extension
+                );
+
+            /*
+             * Build paths
+             */
+
+            absoluteFilePath =
+                FileStorage.buildMonthlyFilePath(
+
+                    monthlyDocument.year,
+
+                    monthlyDocument.month,
+
+                    monthlyDocument.batchId,
+
+                    monthlyDocument.departmentId,
+
+                    fileName
+
+                );
+
+            const relativePath =
+                FileStorage.buildRelativePath(
+
+                    monthlyDocument.year,
+
+                    monthlyDocument.month,
+
+                    monthlyDocument.batchId,
+
+                    monthlyDocument.departmentId,
+
+                    fileName
+
+                );
+
+            /*
+     * Delete previous uploaded file
+     */
+
+            if (FileStorage.fileExists(latestHistory.filePath)) {
+
+                FileStorage.deleteFile(
+                    latestHistory.filePath
+                );
+
+            }
+
+            /*
+             * Save replacement file
+             */
+
+            await fs.writeFile(
+                absoluteFilePath,
+                file.buffer
+            );
+
+            /*
+             * Update current file
+             */
+
+            monthlyDocument.currentFile =
+                relativePath;
+
+            /*
+             * If this is the original Faculty MA upload,
+             * also update originalFile.
+             */
+
+            if (
+                latestHistory.step ===
+                DocumentStep.FACULTY_MA_UPLOAD
+            ) {
+                monthlyDocument!.currentFile = relativePath;
+            }
+
+            /*
+             * Save monthly document
+             */
+
+            await monthlyDocument!.save({
+                transaction,
+            });
+
+            /*
+             * Update latest history record
+             */
+
+            latestHistory.filePath =
+                relativePath;
+
+            latestHistory.remarks =
+                remarks ??
+                "Uploaded document replaced.";
+
+            await latestHistory.save({
+                transaction,
+            });
+
+            /*
+             * Commit transaction
+             */
+
+            await transaction.commit();
+
+            transactionCommitted = true;
+
+            /*
+             * Return updated document
+             */
+
+            const updatedDocument =
+                await MonthlyDocument.findByPk(
+                    monthlyDocument.id,
+                    {
+                        include: [
+                            {
+                                model: Batch,
+                            },
+                            {
+                                model: Department,
+                            },
+                            {
+                                model: User,
+                                attributes: [
+                                    "id",
+                                    "name",
+                                    "registerId",
+                                ],
+                            },
+                        ],
+                    }
+                );
+
+            return updatedDocument;
+
+        } catch (error) {
+
+            if (!transactionCommitted) {
+
+                await transaction.rollback();
+
+            }
+
+            /*
+             * Delete newly uploaded file
+             * if transaction failed.
+             */
+
+            if (
+                absoluteFilePath &&
+                FileStorage.fileExists(
+                    FileStorage.buildRelativePath(
+                        monthlyDocument.year,
+                        monthlyDocument.month,
+                        monthlyDocument.batchId,
+                        monthlyDocument.departmentId,
+                        FileStorage.getWorkflowFileName(
+                            latestHistory.step,
+                            FileStorage.getExtension(file.originalname)
+                        )
+                    )
+                )
+            ) {
+
+                FileStorage.deleteAbsoluteFile(
+                    absoluteFilePath
+                );
+
+            }
+
+            throw error;
+
+        }
+
     }
 
 
