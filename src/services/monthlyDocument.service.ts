@@ -481,11 +481,7 @@ export class MonthlyDocumentService {
                 remarks
 
             } = payload;
-
-            /*
-             * Validate user
-             */
-
+            
             const user = await User.findByPk(
                 uploadedBy,
                 { transaction }
@@ -494,10 +490,6 @@ export class MonthlyDocumentService {
             if (!user) {
                 throw new Error("User not found.");
             }
-
-            /*
-             * Find monthly document
-             */
 
             monthlyDocument =
                 await MonthlyDocument.findByPk(
@@ -511,11 +503,7 @@ export class MonthlyDocumentService {
                 );
             }
 
-            /*
-             * Find latest history
-             */
-
-            const latestHistory =
+            latestHistory =
                 await DocumentHistory.findOne({
 
                     where: {
@@ -536,11 +524,6 @@ export class MonthlyDocumentService {
                 );
             }
 
-            /*
-             * Only the last uploader
-             * can replace the upload.
-             */
-
             if (
                 latestHistory.uploadedBy !== uploadedBy
             ) {
@@ -550,11 +533,6 @@ export class MonthlyDocumentService {
                 );
 
             }
-
-            /*
-             * Ensure workflow
-             * hasn't moved.
-             */
 
             const expectedCurrentStep =
                 DocumentWorkflow.getNextStep(
@@ -572,10 +550,6 @@ export class MonthlyDocumentService {
 
             }
 
-            /*
-             * Generate filename
-             */
-
             const extension =
                 FileStorage.getExtension(
                     file.originalname
@@ -586,10 +560,6 @@ export class MonthlyDocumentService {
                     latestHistory.step,
                     extension
                 );
-
-            /*
-             * Build paths
-             */
 
             absoluteFilePath =
                 FileStorage.buildMonthlyFilePath(
@@ -621,60 +591,27 @@ export class MonthlyDocumentService {
 
                 );
 
-            /*
-     * Delete previous uploaded file
-     */
-
-            if (FileStorage.fileExists(latestHistory.filePath)) {
-
-                FileStorage.deleteFile(
-                    latestHistory.filePath
-                );
-
-            }
-
-            /*
-             * Save replacement file
-             */
+            const oldRelativePath = latestHistory.filePath;
 
             await fs.writeFile(
                 absoluteFilePath,
                 file.buffer
             );
 
-            /*
-             * Update current file
-             */
-
-            monthlyDocument.currentFile =
-                relativePath;
-
-            /*
-             * If this is the original Faculty MA upload,
-             * also update originalFile.
-             */
+            monthlyDocument.currentFile = relativePath;
 
             if (
                 latestHistory.step ===
                 DocumentStep.FACULTY_MA_UPLOAD
             ) {
-                monthlyDocument!.currentFile = relativePath;
+                monthlyDocument.originalFile = relativePath;
             }
 
-            /*
-             * Save monthly document
-             */
-
-            await monthlyDocument!.save({
+            await monthlyDocument.save({
                 transaction,
             });
 
-            /*
-             * Update latest history record
-             */
-
-            latestHistory.filePath =
-                relativePath;
+            latestHistory.filePath = relativePath;
 
             latestHistory.remarks =
                 remarks ??
@@ -684,17 +621,16 @@ export class MonthlyDocumentService {
                 transaction,
             });
 
-            /*
-             * Commit transaction
-             */
-
             await transaction.commit();
 
             transactionCommitted = true;
 
-            /*
-             * Return updated document
-             */
+            if (
+                FileStorage.fileExists(oldRelativePath)
+            ) {
+                FileStorage.deleteFile(oldRelativePath);
+            }
+
 
             const updatedDocument =
                 await MonthlyDocument.findByPk(
@@ -724,40 +660,16 @@ export class MonthlyDocumentService {
         } catch (error) {
 
             if (!transactionCommitted) {
-
                 await transaction.rollback();
-
             }
 
-            /*
-             * Delete newly uploaded file
-             * if transaction failed.
-             */
-
-            if (
-                absoluteFilePath &&
-                FileStorage.fileExists(
-                    FileStorage.buildRelativePath(
-                        monthlyDocument.year,
-                        monthlyDocument.month,
-                        monthlyDocument.batchId,
-                        monthlyDocument.departmentId,
-                        FileStorage.getWorkflowFileName(
-                            latestHistory.step,
-                            FileStorage.getExtension(file.originalname)
-                        )
-                    )
-                )
-            ) {
-
+            if (absoluteFilePath) {
                 FileStorage.deleteAbsoluteFile(
                     absoluteFilePath
                 );
-
             }
 
             throw error;
-
         }
 
     }
