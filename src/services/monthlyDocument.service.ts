@@ -481,7 +481,7 @@ export class MonthlyDocumentService {
                 remarks
 
             } = payload;
-            
+
             const user = await User.findByPk(
                 uploadedBy,
                 { transaction }
@@ -534,20 +534,15 @@ export class MonthlyDocumentService {
 
             }
 
-            const expectedCurrentStep =
-                DocumentWorkflow.getNextStep(
-                    latestHistory.step
-                );
-
             if (
-                monthlyDocument.currentStep !==
-                expectedCurrentStep
+                !DocumentWorkflow.canReplaceUpload(
+                    latestHistory.step,
+                    monthlyDocument.currentStep
+                )
             ) {
-
                 throw new Error(
                     "This document has already been processed by the next approver and can no longer be replaced."
                 );
-
             }
 
             const extension =
