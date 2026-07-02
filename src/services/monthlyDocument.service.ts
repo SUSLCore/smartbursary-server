@@ -36,6 +36,12 @@ export interface ReplaceUploadedDocumentPayload {
     remarks?: string;
 }
 
+export interface ReturnDocumentPayload {
+    documentId: number;
+    returnedBy: number;
+    remarks: string;
+}
+
 
 export class MonthlyDocumentService {
 
@@ -773,6 +779,165 @@ export class MonthlyDocumentService {
 
         return documents;
     }
+
+
+    static async returnDocument(
+        payload: ReturnDocumentPayload
+    ) {
+
+        const transaction =
+            await sequelize.transaction();
+
+        let transactionCommitted = false;
+
+        try {
+
+            const {
+
+                documentId,
+
+                returnedBy,
+
+                remarks,
+
+            } = payload;
+
+            const user =
+                await User.findByPk(
+                    returnedBy,
+                    { transaction }
+                );
+
+            if (!user) {
+                throw new Error(
+                    "User not found."
+                );
+            }
+
+            const monthlyDocument =
+                await MonthlyDocument.findByPk(
+                    documentId,
+                    { transaction }
+                );
+
+            if (!monthlyDocument) {
+                throw new Error(
+                    "Monthly document not found."
+                );
+            }
+
+            if (
+                !DocumentWorkflow.isValidStep(
+                    monthlyDocument.currentStep
+                )
+            ) {
+                throw new Error(
+                    "Invalid workflow state."
+                );
+            }
+
+            if (
+                !DocumentWorkflow.canRoleHandleStep(
+                    user.role,
+                    monthlyDocument.currentStep
+                )
+            ) {
+                throw new Error(
+                    "You are not allowed to return this document."
+                );
+            }
+
+            if (
+                !DocumentWorkflow.canReturn(
+                    monthlyDocument.currentStep
+                )
+            ) {
+                throw new Error(
+                    "This workflow step cannot return a document."
+                );
+            }
+
+            const returnStep =
+                DocumentWorkflow.getReturnStep(
+                    monthlyDocument.currentStep
+                );
+
+            if (!returnStep) {
+                throw new Error(
+                    "Unable to determine return step."
+                );
+            }
+
+            monthlyDocument.currentStep =
+                returnStep;
+
+            await monthlyDocument.save({
+                transaction,
+            });
+
+            await this.createHistory(
+                transaction,
+                {
+                    documentId:
+                        monthlyDocument.id,
+
+                    uploadedBy:
+                        returnedBy,
+
+                    step:
+                        returnStep,
+
+                    filePath:
+                        monthlyDocument.currentFile,
+
+                    remarks:
+                        remarks,
+                }
+            );
+
+            await transaction.commit();
+
+            transactionCommitted = true;
+
+            const updatedDocument =
+                await MonthlyDocument.findByPk(
+                    monthlyDocument.id,
+                    {
+                        include: [
+                            {
+                                model: Batch,
+                            },
+                            {
+                                model: Department,
+                            },
+                            {
+                                model: User,
+                                attributes: [
+                                    "id",
+                                    "name",
+                                    "registerId",
+                                ],
+                            },
+                        ],
+                    }
+                );
+
+            return updatedDocument;
+
+        } catch (error) {
+
+            if (!transactionCommitted) {
+                await transaction.rollback();
+            }
+
+            throw error;
+
+        }
+
+    }
+
+
+
 
     static async getDocumentHistory(
         documentId: number
