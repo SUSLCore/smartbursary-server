@@ -29,6 +29,20 @@ export interface UploadSignedDocumentPayload {
     remarks?: string;
 }
 
+export interface ReplaceUploadedDocumentPayload {
+    documentId: number;
+    uploadedBy: number;
+    file: Express.Multer.File;
+    remarks?: string;
+}
+
+export interface ReturnDocumentPayload {
+    documentId: number;
+    returnedBy: number;
+    remarks: string;
+}
+
+
 export class MonthlyDocumentService {
 
     private static async createHistory(
@@ -447,6 +461,221 @@ export class MonthlyDocumentService {
     }
 
 
+
+    static async replaceUploadedDocument(
+        payload: ReplaceUploadedDocumentPayload
+    ) {
+
+        const transaction = await sequelize.transaction();
+
+        let absoluteFilePath: string | null = null;
+        let transactionCommitted = false;
+
+        let monthlyDocument: MonthlyDocument | null = null;
+        let latestHistory: DocumentHistory | null = null;
+
+        try {
+
+            const {
+
+                documentId,
+
+                uploadedBy,
+
+                file,
+
+                remarks
+
+            } = payload;
+
+            const user = await User.findByPk(
+                uploadedBy,
+                { transaction }
+            );
+
+            if (!user) {
+                throw new Error("User not found.");
+            }
+
+            monthlyDocument =
+                await MonthlyDocument.findByPk(
+                    documentId,
+                    { transaction }
+                );
+
+            if (!monthlyDocument) {
+                throw new Error(
+                    "Monthly document not found."
+                );
+            }
+
+            latestHistory =
+                await DocumentHistory.findOne({
+
+                    where: {
+                        documentId,
+                    },
+
+                    order: [
+                        ["createdAt", "DESC"],
+                    ],
+
+                    transaction,
+
+                });
+
+            if (!latestHistory) {
+                throw new Error(
+                    "Document history not found."
+                );
+            }
+
+            if (
+                latestHistory.uploadedBy !== uploadedBy
+            ) {
+
+                throw new Error(
+                    "Only the last uploader can replace this document."
+                );
+
+            }
+
+            if (
+                !DocumentWorkflow.canReplaceUpload(
+                    latestHistory.step,
+                    monthlyDocument.currentStep
+                )
+            ) {
+                throw new Error(
+                    "This document has already been processed by the next approver and can no longer be replaced."
+                );
+            }
+
+            const extension =
+                FileStorage.getExtension(
+                    file.originalname
+                );
+
+            const fileName =
+                FileStorage.getWorkflowFileName(
+                    latestHistory.step,
+                    extension
+                );
+
+            absoluteFilePath =
+                FileStorage.buildMonthlyFilePath(
+
+                    monthlyDocument.year,
+
+                    monthlyDocument.month,
+
+                    monthlyDocument.batchId,
+
+                    monthlyDocument.departmentId,
+
+                    fileName
+
+                );
+
+            const relativePath =
+                FileStorage.buildRelativePath(
+
+                    monthlyDocument.year,
+
+                    monthlyDocument.month,
+
+                    monthlyDocument.batchId,
+
+                    monthlyDocument.departmentId,
+
+                    fileName
+
+                );
+
+            const oldRelativePath = latestHistory.filePath;
+
+            await fs.writeFile(
+                absoluteFilePath,
+                file.buffer
+            );
+
+            monthlyDocument.currentFile = relativePath;
+
+            if (
+                latestHistory.step ===
+                DocumentStep.FACULTY_MA_UPLOAD
+            ) {
+                monthlyDocument.originalFile = relativePath;
+            }
+
+            await monthlyDocument.save({
+                transaction,
+            });
+
+            latestHistory.filePath = relativePath;
+
+            latestHistory.remarks =
+                remarks ??
+                "Uploaded document replaced.";
+
+            await latestHistory.save({
+                transaction,
+            });
+
+            await transaction.commit();
+
+            transactionCommitted = true;
+
+            if (
+                FileStorage.fileExists(oldRelativePath)
+            ) {
+                FileStorage.deleteFile(oldRelativePath);
+            }
+
+
+            const updatedDocument =
+                await MonthlyDocument.findByPk(
+                    monthlyDocument.id,
+                    {
+                        include: [
+                            {
+                                model: Batch,
+                            },
+                            {
+                                model: Department,
+                            },
+                            {
+                                model: User,
+                                attributes: [
+                                    "id",
+                                    "name",
+                                    "registerId",
+                                ],
+                            },
+                        ],
+                    }
+                );
+
+            return updatedDocument;
+
+        } catch (error) {
+
+            if (!transactionCommitted) {
+                await transaction.rollback();
+            }
+
+            if (absoluteFilePath) {
+                FileStorage.deleteAbsoluteFile(
+                    absoluteFilePath
+                );
+            }
+
+            throw error;
+        }
+
+    }
+
+
     static async getPendingDocuments(userId: number) {
 
         const user = await User.findByPk(userId);
@@ -550,6 +779,165 @@ export class MonthlyDocumentService {
 
         return documents;
     }
+
+
+    static async returnDocument(
+        payload: ReturnDocumentPayload
+    ) {
+
+        const transaction =
+            await sequelize.transaction();
+
+        let transactionCommitted = false;
+
+        try {
+
+            const {
+
+                documentId,
+
+                returnedBy,
+
+                remarks,
+
+            } = payload;
+
+            const user =
+                await User.findByPk(
+                    returnedBy,
+                    { transaction }
+                );
+
+            if (!user) {
+                throw new Error(
+                    "User not found."
+                );
+            }
+
+            const monthlyDocument =
+                await MonthlyDocument.findByPk(
+                    documentId,
+                    { transaction }
+                );
+
+            if (!monthlyDocument) {
+                throw new Error(
+                    "Monthly document not found."
+                );
+            }
+
+            if (
+                !DocumentWorkflow.isValidStep(
+                    monthlyDocument.currentStep
+                )
+            ) {
+                throw new Error(
+                    "Invalid workflow state."
+                );
+            }
+
+            if (
+                !DocumentWorkflow.canRoleHandleStep(
+                    user.role,
+                    monthlyDocument.currentStep
+                )
+            ) {
+                throw new Error(
+                    "You are not allowed to return this document."
+                );
+            }
+
+            if (
+                !DocumentWorkflow.canReturn(
+                    monthlyDocument.currentStep
+                )
+            ) {
+                throw new Error(
+                    "This workflow step cannot return a document."
+                );
+            }
+
+            const returnStep =
+                DocumentWorkflow.getReturnStep(
+                    monthlyDocument.currentStep
+                );
+
+            if (!returnStep) {
+                throw new Error(
+                    "Unable to determine return step."
+                );
+            }
+
+            monthlyDocument.currentStep =
+                returnStep;
+
+            await monthlyDocument.save({
+                transaction,
+            });
+
+            await this.createHistory(
+                transaction,
+                {
+                    documentId:
+                        monthlyDocument.id,
+
+                    uploadedBy:
+                        returnedBy,
+
+                    step:
+                        returnStep,
+
+                    filePath:
+                        monthlyDocument.currentFile,
+
+                    remarks:
+                        remarks,
+                }
+            );
+
+            await transaction.commit();
+
+            transactionCommitted = true;
+
+            const updatedDocument =
+                await MonthlyDocument.findByPk(
+                    monthlyDocument.id,
+                    {
+                        include: [
+                            {
+                                model: Batch,
+                            },
+                            {
+                                model: Department,
+                            },
+                            {
+                                model: User,
+                                attributes: [
+                                    "id",
+                                    "name",
+                                    "registerId",
+                                ],
+                            },
+                        ],
+                    }
+                );
+
+            return updatedDocument;
+
+        } catch (error) {
+
+            if (!transactionCommitted) {
+                await transaction.rollback();
+            }
+
+            throw error;
+
+        }
+
+    }
+
+
+
 
     static async getDocumentHistory(
         documentId: number

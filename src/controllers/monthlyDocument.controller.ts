@@ -141,6 +141,94 @@ export class MonthlyDocumentController {
         }
     }
 
+    static async replaceUploadedDocument(
+        req: AuthRequest,
+        res: Response
+    ) {
+        try {
+
+            if (!req.file) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Please upload a replacement document.",
+                });
+            }
+
+            const document =
+                await MonthlyDocumentService.replaceUploadedDocument({
+
+                    documentId: Number(req.params.id),
+
+                    uploadedBy: req.user!.id,
+
+                    remarks: req.body.remarks,
+
+                    file: req.file,
+
+                });
+
+            return res.status(200).json({
+
+                success: true,
+
+                message: "Document replaced successfully.",
+
+                data: document,
+
+            });
+
+        } catch (error: any) {
+
+            return res.status(400).json({
+
+                success: false,
+
+                message: error.message,
+
+            });
+
+        }
+    }
+
+    static async returnDocument(
+        req: AuthRequest,
+        res: Response
+    ) {
+        try {
+
+            const document =
+                await MonthlyDocumentService.returnDocument({
+
+                    documentId: Number(req.params.id),
+
+                    returnedBy: req.user!.id,
+
+                    remarks: req.body.remarks,
+
+                });
+
+            return res.status(200).json({
+
+                success: true,
+
+                message: "Document returned successfully.",
+
+                data: document,
+
+            });
+
+        } catch (error: any) {
+
+            return res.status(400).json({
+
+                success: false,
+
+                message: error.message,
+
+            });
+
+        }
+    }
 
     static async getPendingDocuments(
         req: AuthRequest,

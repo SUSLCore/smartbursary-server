@@ -55,9 +55,6 @@ export class DocumentWorkflow {
     };
 
 
-    /**
-     * Returns next workflow step
-     */
     static getNextStep(currentStep: DocumentStep): DocumentStep | null {
         const index = this.WORKFLOW.indexOf(currentStep);
 
@@ -72,9 +69,7 @@ export class DocumentWorkflow {
         return this.WORKFLOW[index + 1];
     }
 
-    /**
-     * Returns previous workflow step
-     */
+
     static getPreviousStep(currentStep: DocumentStep): DocumentStep | null {
         const index = this.WORKFLOW.indexOf(currentStep);
 
@@ -85,37 +80,27 @@ export class DocumentWorkflow {
         return this.WORKFLOW[index - 1];
     }
 
-    /**
-     * Is workflow finished?
-     */
+
     static isFinalStep(step: DocumentStep): boolean {
         return step === DocumentStep.FACULTY_MA_FINAL;
     }
 
-    /**
-     * Validate workflow step
-     */
+
     static isValidStep(step: string): boolean {
         return this.WORKFLOW.includes(step as DocumentStep);
     }
 
-    /**
-     * Return all workflow steps
-     */
+
     static getWorkflow(): DocumentStep[] {
         return [...this.WORKFLOW];
     }
 
-    /**
-    * Returns all workflow steps handled by a role
-    */
+
     static getStepsByRole(role: UserRole): DocumentStep[] {
         return this.ROLE_STEP_MAP[role] ?? [];
     }
 
-    /**
-    * Checks whether a role can handle a workflow step
-    */
+
     static canRoleHandleStep(
         role: UserRole,
         step: DocumentStep
@@ -124,4 +109,115 @@ export class DocumentWorkflow {
 
         return allowedSteps.includes(step);
     }
+
+
+    static canReplaceUpload(
+        lastHistoryStep: DocumentStep,
+        currentStep: DocumentStep
+    ): boolean {
+
+        const expectedStep =
+            this.getNextStep(lastHistoryStep);
+
+        return expectedStep === currentStep;
+    }
+
+    static isReturnStep(
+        step: DocumentStep
+    ): boolean {
+
+        return [
+
+            DocumentStep.DEPARTMENT_HEAD_RETURN,
+
+            DocumentStep.FACULTY_AR_RETURN,
+
+            DocumentStep.SAR_RETURN,
+
+        ].includes(step);
+
+    }
+
+    static getReturnStep(
+        step: DocumentStep
+    ): DocumentStep | null {
+
+        switch (step) {
+
+            case DocumentStep.DEPARTMENT_MA_APPROVAL:
+                return DocumentStep.DEPARTMENT_HEAD_RETURN;
+
+            case DocumentStep.DEPARTMENT_HEAD_APPROVAL:
+                return DocumentStep.FACULTY_AR_RETURN;
+
+            case DocumentStep.FACULTY_AR_APPROVAL:
+                return DocumentStep.SAR_RETURN;
+
+            default:
+                return null;
+
+        }
+
+    }
+
+    static canReturn(
+        step: DocumentStep
+    ): boolean {
+
+        return this.getReturnStep(step) !== null;
+    }
+
+
+    static isApprovalStep(
+        step: DocumentStep
+    ): boolean {
+
+        return [
+
+            DocumentStep.SAR_APPROVAL,
+
+            DocumentStep.FACULTY_AR_APPROVAL,
+
+            DocumentStep.DEPARTMENT_HEAD_APPROVAL,
+
+            DocumentStep.DEPARTMENT_MA_APPROVAL,
+
+        ].includes(step);
+
+    }
+
+
+    static getCurrentRole(
+        step: DocumentStep
+    ): UserRole | null {
+
+        switch (step) {
+
+            case DocumentStep.FACULTY_MA_UPLOAD:
+            case DocumentStep.FACULTY_MA_FINAL:
+                return UserRole.FACULTY_MA;
+
+            case DocumentStep.SAR_APPROVAL:
+            case DocumentStep.SAR_RETURN:
+                return UserRole.STUDENT_SERVICE_SAR;
+
+            case DocumentStep.FACULTY_AR_APPROVAL:
+            case DocumentStep.FACULTY_AR_RETURN:
+                return UserRole.FACULTY_AR;
+
+            case DocumentStep.DEPARTMENT_HEAD_APPROVAL:
+            case DocumentStep.DEPARTMENT_HEAD_RETURN:
+                return UserRole.DEPARTMENT_HEAD;
+
+            case DocumentStep.DEPARTMENT_MA_APPROVAL:
+                return UserRole.DEPARTMENT_MA;
+
+            default:
+                return null;
+
+        }
+    }
+
+
+
 }
