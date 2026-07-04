@@ -858,9 +858,14 @@ export class MonthlyDocumentService {
                 );
             }
 
-            /*
-             * Move workflow back one step
-             */
+            if (
+                previousStep ===
+                DocumentStep.FACULTY_MA_UPLOAD
+            ) {
+                throw new Error(
+                    "The initial uploaded document cannot be rejected through the workflow. Please contact the Faculty MA to replace the uploaded document."
+                );
+            }
 
             monthlyDocument.currentStep =
                 previousStep;
@@ -869,27 +874,20 @@ export class MonthlyDocumentService {
                 transaction,
             });
 
-            await monthlyDocument.save({
-                transaction,
-            });
-
             await this.createHistory(
                 transaction,
                 {
-                    documentId:
-                        monthlyDocument.id,
+                    documentId: monthlyDocument.id,
 
-                    uploadedBy:
-                        returnedBy,
+                    uploadedBy: returnedBy,
 
-                    step:
-                        previousStep,
+                    step: previousStep,
 
-                    filePath:
-                        monthlyDocument.currentFile,
+                    filePath: monthlyDocument.currentFile,
 
                     remarks:
-                        remarks,
+                        remarks ??
+                        `Returned to ${previousStep} for correction.`,
                 }
             );
 
