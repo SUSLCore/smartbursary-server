@@ -48,10 +48,11 @@ router.put(
 );
 
 router.put(
-    "/:id/return",
+    "/:id/reject",
     protect,
     authorize(
         UserRole.FACULTY_AR,
+        UserRole.STUDENT_SERVICE_SAR,
         UserRole.DEPARTMENT_HEAD,
         UserRole.DEPARTMENT_MA
     ),
