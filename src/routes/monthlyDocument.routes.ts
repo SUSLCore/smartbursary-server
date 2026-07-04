@@ -34,7 +34,7 @@ router.put(
 );
 
 router.put(
-    "/:id/replace",
+    "/:id/reject",
     protect,
     authorize(
         UserRole.FACULTY_MA,

@@ -843,33 +843,31 @@ export class MonthlyDocumentService {
                 )
             ) {
                 throw new Error(
-                    "You are not allowed to return this document."
+                    "You are not allowed to reject  this document."
                 );
             }
 
-            if (
-                !DocumentWorkflow.canReturn(
-                    monthlyDocument.currentStep
-                )
-            ) {
-                throw new Error(
-                    "This workflow step cannot return a document."
-                );
-            }
-
-            const returnStep =
-                DocumentWorkflow.getReturnStep(
+            const previousStep =
+                DocumentWorkflow.getPreviousStep(
                     monthlyDocument.currentStep
                 );
 
-            if (!returnStep) {
+            if (!previousStep) {
                 throw new Error(
-                    "Unable to determine return step."
+                    "This document cannot be returned any further."
                 );
             }
+
+            /*
+             * Move workflow back one step
+             */
 
             monthlyDocument.currentStep =
-                returnStep;
+                previousStep;
+
+            await monthlyDocument.save({
+                transaction,
+            });
 
             await monthlyDocument.save({
                 transaction,
@@ -885,7 +883,7 @@ export class MonthlyDocumentService {
                         returnedBy,
 
                     step:
-                        returnStep,
+                        previousStep,
 
                     filePath:
                         monthlyDocument.currentFile,
