@@ -843,33 +843,32 @@ export class MonthlyDocumentService {
                 )
             ) {
                 throw new Error(
-                    "You are not allowed to return this document."
+                    "You are not allowed to reject  this document."
+                );
+            }
+
+            const previousStep =
+                DocumentWorkflow.getPreviousStep(
+                    monthlyDocument.currentStep
+                );
+
+            if (!previousStep) {
+                throw new Error(
+                    "This document cannot be returned any further."
                 );
             }
 
             if (
-                !DocumentWorkflow.canReturn(
-                    monthlyDocument.currentStep
-                )
+                previousStep ===
+                DocumentStep.FACULTY_MA_UPLOAD
             ) {
                 throw new Error(
-                    "This workflow step cannot return a document."
-                );
-            }
-
-            const returnStep =
-                DocumentWorkflow.getReturnStep(
-                    monthlyDocument.currentStep
-                );
-
-            if (!returnStep) {
-                throw new Error(
-                    "Unable to determine return step."
+                    "The initial uploaded document cannot be rejected through the workflow. Please contact the Faculty MA to replace the uploaded document."
                 );
             }
 
             monthlyDocument.currentStep =
-                returnStep;
+                previousStep;
 
             await monthlyDocument.save({
                 transaction,
@@ -878,20 +877,17 @@ export class MonthlyDocumentService {
             await this.createHistory(
                 transaction,
                 {
-                    documentId:
-                        monthlyDocument.id,
+                    documentId: monthlyDocument.id,
 
-                    uploadedBy:
-                        returnedBy,
+                    uploadedBy: returnedBy,
 
-                    step:
-                        returnStep,
+                    step: previousStep,
 
-                    filePath:
-                        monthlyDocument.currentFile,
+                    filePath: monthlyDocument.currentFile,
 
                     remarks:
-                        remarks,
+                        remarks ??
+                        `Returned to ${previousStep} for correction.`,
                 }
             );
 
