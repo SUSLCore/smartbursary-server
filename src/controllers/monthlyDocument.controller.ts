@@ -141,6 +141,38 @@ export class MonthlyDocumentController {
         }
     }
 
+    static async getMyUploads(
+        req: AuthRequest,
+        res: Response
+    ) {
+        try {
+
+            const documents =
+                await MonthlyDocumentService.getMyUploads(
+                    req.user!.id
+                );
+
+            return res.status(200).json({
+
+                success: true,
+
+                data: documents,
+
+            });
+
+        } catch (error: any) {
+
+            return res.status(400).json({
+
+                success: false,
+
+                message: error.message,
+
+            });
+
+        }
+    }
+
     static async replaceUploadedDocument(
         req: AuthRequest,
         res: Response
