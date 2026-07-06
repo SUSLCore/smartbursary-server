@@ -461,6 +461,156 @@ export class MonthlyDocumentService {
     }
 
 
+    static async getMyUploads(
+        userId: number
+    ) {
+        const user = await User.findByPk(userId);
+
+        if (!user) {
+            throw new Error("User not found.");
+        }
+
+        const documents =
+            await MonthlyDocument.findAll({
+
+                where: {
+
+                    uploadedBy: userId,
+
+                    status: "PENDING",
+
+                },
+
+                include: [
+
+                    {
+                        model: Batch,
+                        attributes: [
+                            "id",
+                            "name",
+                        ],
+                    },
+
+                    {
+                        model: Department,
+                        attributes: [
+                            "id",
+                            "name",
+                        ],
+                    },
+
+                    {
+                        model: User,
+                        attributes: [
+                            "id",
+                            "name",
+                            "registerId",
+                        ],
+                    },
+
+                ],
+
+                order: [
+
+                    ["createdAt", "DESC"],
+
+                ],
+
+            });
+
+        const result = [];
+
+        for (const document of documents) {
+
+            /*
+             * Latest history
+             */
+            const latestHistory =
+                await DocumentHistory.findOne({
+
+                    where: {
+
+                        documentId:
+                            document.id,
+
+                    },
+
+                    order: [
+
+                        ["createdAt", "DESC"],
+
+                    ],
+
+                });
+
+            if (!latestHistory) {
+                continue;
+            }
+
+            /*
+             * Can replace?
+             */
+
+            const canReplace =
+                DocumentWorkflow.canReplaceUpload(
+
+                    latestHistory.step,
+
+                    document.currentStep,
+
+                );
+
+            /*
+             * Current owner
+             */
+
+            const currentOwner =
+                DocumentWorkflow.getCurrentRole(
+                    document.currentStep
+                );
+
+            /*
+             * Only return
+             * replaceable uploads.
+             */
+
+            if (!canReplace) {
+                continue;
+            }
+
+            result.push({
+
+                id: document.id,
+
+                batch: document.batchId,
+
+                department: document.departmentId,
+
+                month: document.month,
+
+                year: document.year,
+
+                currentStep:
+                    document.currentStep,
+
+                waitingFor:
+                    currentOwner,
+
+                canReplace,
+
+                uploadedAt:
+                    document.uploadedBy,
+
+                status:
+                    document.status,
+
+            });
+
+        }
+
+        return result;
+    }
+
 
     static async replaceUploadedDocument(
         payload: ReplaceUploadedDocumentPayload
