@@ -33,6 +33,19 @@ router.put(
     MonthlyDocumentController.uploadSignedDocument
 );
 
+router.get(
+    "/my-uploads",
+    protect,
+    authorize(
+        UserRole.FACULTY_MA,
+        UserRole.STUDENT_SERVICE_SAR,
+        UserRole.FACULTY_AR,
+        UserRole.DEPARTMENT_HEAD,
+        UserRole.DEPARTMENT_MA
+    ),
+    MonthlyDocumentController.getMyUploads
+);
+
 router.put(
     "/:id/replace",
     protect,
