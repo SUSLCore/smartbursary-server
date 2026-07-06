@@ -474,11 +474,7 @@ export class MonthlyDocumentService {
             await MonthlyDocument.findAll({
 
                 where: {
-
-                    uploadedBy: userId,
-
                     status: "PENDING",
-
                 },
 
                 include: [
@@ -544,6 +540,12 @@ export class MonthlyDocumentService {
                 });
 
             if (!latestHistory) {
+                continue;
+            }
+
+            if (
+                latestHistory.uploadedBy !== userId
+            ) {
                 continue;
             }
 
