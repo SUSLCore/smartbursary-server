@@ -6,9 +6,6 @@ import { UserRole } from "../types/user.types";
 
 const router = express.Router();
 
-/**
- * Search user by registration ID
- */
 router.get(
   "/users/:registerId",
   protect,
@@ -16,9 +13,6 @@ router.get(
   AdminController.getUserByRegisterId
 );
 
-/**
- * Delete user by registration ID
- */
 router.delete(
   "/users/:registerId",
   protect,
