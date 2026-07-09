@@ -61,10 +61,6 @@ export class AdminMonthlyDocumentService {
 
         try {
 
-            /*
-             * Find document
-             */
-
             const monthlyDocument =
                 await MonthlyDocument.findByPk(
                     documentId,
@@ -81,10 +77,6 @@ export class AdminMonthlyDocumentService {
 
             }
 
-            /*
-             * Load document history
-             */
-
             const history =
                 await DocumentHistory.findAll({
 
@@ -96,10 +88,6 @@ export class AdminMonthlyDocumentService {
 
                 });
 
-            /*
-             * Delete history
-             */
-
             await DocumentHistory.destroy({
 
                 where: {
@@ -110,27 +98,15 @@ export class AdminMonthlyDocumentService {
 
             });
 
-            /*
-             * Delete document
-             */
-
             await monthlyDocument.destroy({
 
                 transaction,
 
             });
 
-            /*
-             * Commit database
-             */
-
             await transaction.commit();
 
             transactionCommitted = true;
-
-            /*
-             * Delete physical files
-             */
 
             const deletedFiles =
                 new Set<string>();
