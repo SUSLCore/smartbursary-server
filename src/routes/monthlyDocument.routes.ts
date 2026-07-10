@@ -64,6 +64,7 @@ router.put(
     "/:id/reject",
     protect,
     authorize(
+        UserRole.FACULTY_MA,
         UserRole.FACULTY_AR,
         UserRole.STUDENT_SERVICE_SAR,
         UserRole.DEPARTMENT_HEAD,

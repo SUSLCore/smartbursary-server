@@ -16,6 +16,11 @@ export class AdminMonthlyDocumentService {
         const documents =
             await MonthlyDocument.findAll({
 
+                where: {
+                    status: "PENDING",
+                },
+
+
                 include: [
 
                     {
