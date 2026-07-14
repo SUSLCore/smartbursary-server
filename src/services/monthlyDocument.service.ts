@@ -42,6 +42,11 @@ export interface ReturnDocumentPayload {
     remarks: string;
 }
 
+export interface CompleteMonthlyDocumentPayload {
+    documentId: number;
+    completedBy: number;
+}
+
 
 export class MonthlyDocumentService {
 
@@ -1330,5 +1335,165 @@ export class MonthlyDocumentService {
 
         };
     }
+
+
+static async completeMonthlyDocument(
+    payload: CompleteMonthlyDocumentPayload
+) {
+
+    const transaction =
+        await sequelize.transaction();
+
+    let committed = false;
+
+    try {
+
+        const {
+            documentId,
+            completedBy,
+        } = payload;
+
+        /*
+         * Validate user
+         */
+
+        const user =
+            await User.findByPk(
+                completedBy,
+                {
+                    transaction,
+                }
+            );
+
+        if (!user) {
+            throw new Error(
+                "User not found."
+            );
+        }
+
+        /*
+         * Find document
+         */
+
+        const monthlyDocument =
+            await MonthlyDocument.findByPk(
+                documentId,
+                {
+                    transaction,
+                }
+            );
+
+        if (!monthlyDocument) {
+            throw new Error(
+                "Monthly document not found."
+            );
+        }
+
+        /*
+         * Ensure workflow reached
+         * Faculty MA final stage.
+         */
+
+        if (
+            monthlyDocument.currentStep !==
+            DocumentStep.FACULTY_MA_FINAL
+        ) {
+
+            throw new Error(
+                "Document has not reached the final workflow stage."
+            );
+
+        }
+
+        /*
+         * Prevent duplicate completion.
+         */
+
+        if (
+            monthlyDocument.status ===
+            "COMPLETED"
+        ) {
+
+            throw new Error(
+                "Document is already completed."
+            );
+
+        }
+
+        /*
+         * Mark completed.
+         */
+
+        monthlyDocument.status =
+            "COMPLETED";
+
+        await monthlyDocument.save({
+            transaction,
+        });
+
+        /*
+         * Record workflow history
+         */
+
+        await this.createHistory(
+            transaction,
+            {
+                documentId:
+                    monthlyDocument.id,
+
+                uploadedBy:
+                    completedBy,
+
+                step:
+                    DocumentStep.FACULTY_MA_FINAL,
+
+                filePath:
+                    monthlyDocument.currentFile,
+
+                remarks:
+                    "Workflow marked as completed.",
+            }
+        );
+
+        await transaction.commit();
+
+        committed = true;
+
+        return await MonthlyDocument.findByPk(
+            monthlyDocument.id,
+            {
+                include: [
+                    {
+                        model: Batch,
+                    },
+                    {
+                        model: Department,
+                    },
+                    {
+                        model: User,
+                        attributes: [
+                            "id",
+                            "name",
+                            "registerId",
+                        ],
+                    },
+                ],
+            }
+        );
+
+    } catch (error) {
+
+        if (!committed) {
+
+            await transaction.rollback();
+
+        }
+
+        throw error;
+
+    }
+
+}
+
 
 }
