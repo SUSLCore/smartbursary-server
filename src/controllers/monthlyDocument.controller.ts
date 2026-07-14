@@ -125,11 +125,8 @@ export class MonthlyDocumentController {
             });
 
         } catch (error: any) {
-
-            console.log("========================");
             console.log(error);
             console.log(error.message);
-            console.log("========================");
             return res.status(400).json({
 
                 success: false,
@@ -434,5 +431,42 @@ export class MonthlyDocumentController {
         }
     }
 
+    static async completeMonthlyDocument(
+        req: AuthRequest,
+        res: Response
+    ) {
+        try {
+
+            const document =
+                await MonthlyDocumentService.completeMonthlyDocument({
+
+                    documentId: Number(req.params.id),
+
+                    completedBy: req.user!.id,
+
+                });
+
+            return res.status(200).json({
+
+                success: true,
+
+                message: "Monthly document workflow completed successfully.",
+
+                data: document,
+
+            });
+
+        } catch (error: any) {
+
+            return res.status(400).json({
+
+                success: false,
+
+                message: error.message,
+
+            });
+
+        }
+    }
 
 }
