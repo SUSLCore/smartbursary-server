@@ -1353,10 +1353,6 @@ static async completeMonthlyDocument(
             completedBy,
         } = payload;
 
-        /*
-         * Validate user
-         */
-
         const user =
             await User.findByPk(
                 completedBy,
@@ -1370,10 +1366,6 @@ static async completeMonthlyDocument(
                 "User not found."
             );
         }
-
-        /*
-         * Find document
-         */
 
         const monthlyDocument =
             await MonthlyDocument.findByPk(
@@ -1389,11 +1381,6 @@ static async completeMonthlyDocument(
             );
         }
 
-        /*
-         * Ensure workflow reached
-         * Faculty MA final stage.
-         */
-
         if (
             monthlyDocument.currentStep !==
             DocumentStep.FACULTY_MA_FINAL
@@ -1404,10 +1391,6 @@ static async completeMonthlyDocument(
             );
 
         }
-
-        /*
-         * Prevent duplicate completion.
-         */
 
         if (
             monthlyDocument.status ===
@@ -1420,20 +1403,12 @@ static async completeMonthlyDocument(
 
         }
 
-        /*
-         * Mark completed.
-         */
-
         monthlyDocument.status =
             "COMPLETED";
 
         await monthlyDocument.save({
             transaction,
         });
-
-        /*
-         * Record workflow history
-         */
 
         await this.createHistory(
             transaction,

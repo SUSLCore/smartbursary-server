@@ -142,4 +142,11 @@ router.get(
     MonthlyDocumentController.getDocument
 );
 
+router.put(
+    "/:id/complete",
+    protect,
+    authorize(UserRole.FACULTY_MA),
+    MonthlyDocumentController.completeMonthlyDocument
+);
+
 export default router;
