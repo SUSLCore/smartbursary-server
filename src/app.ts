@@ -13,6 +13,7 @@ import eligibleStudentRoutes from "./routes/eligibleStudent.routes";
 import userrouter from "./routes/user.routes";
 import adminRoutes from "./routes/admin.routes";
 import monthlyDocumentRoutes from "./routes/monthlyDocument.routes";
+import pwdResetRoutes from "./routes/pwdReset.routes";
 
 const app: Application = express();
 
@@ -37,6 +38,6 @@ app.use("/api/eligible-students", eligibleStudentRoutes);
 app.use("/api/users", userrouter);
 app.use("/api/admin", adminRoutes);
 app.use("/api/monthly-documents", monthlyDocumentRoutes);
-
+app.use("/api/password-reset", pwdResetRoutes);
 
 export default app;
