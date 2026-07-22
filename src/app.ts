@@ -15,6 +15,7 @@ import adminRoutes from "./routes/admin.routes";
 import monthlyDocumentRoutes from "./routes/monthlyDocument.routes";
 import pwdResetRoutes from "./routes/pwdReset.routes";
 
+
 const app: Application = express();
 
 app.use(
@@ -28,7 +29,6 @@ app.use(express.json());
 app.use(helmet());
 app.use(morgan("dev"));
 app.use(cookieParser());
-
 app.use("/api/auth", authRoutes);
 app.use("/api/faculties", facultyRoutes);
 app.use("/api/officers", officerRoutes);
