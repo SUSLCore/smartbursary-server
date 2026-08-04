@@ -1,8 +1,20 @@
 # SmartBursery Backend
 
-SmartBursery Backend is the server-side application for the SmartBursery student bursary management system used at Sabaragamuwa University of Sri Lanka. It exposes REST APIs for authentication, faculty and department management, user management, eligible student imports, monthly document workflows, and administrative operations.
+SmartBursery Backend is the server-side API for the SmartBursery bursary management system used by Sabaragamuwa University of Sri Lanka. It provides role-based access for administrators, faculty officers, department staff, and students to manage bursary-related workflows such as authentication, user management, eligible student imports, and monthly document approvals.
 
-The codebase is a TypeScript Express application using Sequelize and MySQL. It also keeps Sequelize CLI files at the project root for database migrations and legacy model generation support.
+The project is built with TypeScript, Express, Sequelize ORM, and MySQL. It follows a modular structure with separate layers for controllers, services, models, routes, and middleware.
+
+## Overview
+
+This backend supports the following core capabilities:
+
+- User registration and authentication with JWT
+- Role-based authorization for admins, faculty officers, department staff, and students
+- Faculty and department management
+- Batch and eligible student list handling
+- Excel-based eligible student upload processing
+- Monthly document submission, signing, replacement, rejection, completion, and history tracking
+- Admin-level document and user oversight
 
 ## Tech Stack
 
@@ -16,7 +28,7 @@ The codebase is a TypeScript Express application using Sequelize and MySQL. It a
 - multer for file uploads
 - xlsx for spreadsheet parsing
 - dotenv for environment configuration
-- helmet, cors, morgan, and cookie-parser for server middleware
+- helmet, cors, morgan, and cookie-parser for HTTP security and logging
 
 ## Project Structure
 
@@ -49,50 +61,51 @@ The codebase is a TypeScript Express application using Sequelize and MySQL. It a
 └── README.md
 ```
 
-### What Each Folder Does
+### Main folders
 
-- `src/app.ts` sets up the Express app, middleware, CORS, and API route mounting.
-- `src/server.ts` boots the server, connects to the database, and runs seeders before listening.
-- `src/config/database.ts` creates the Sequelize runtime connection used by the TypeScript app.
-- `src/controllers/` contains request handlers for the different API domains.
-- `src/services/` holds the business logic for each domain.
-- `src/middlewares/` contains authentication, authorization, and upload middleware.
-- `src/models/` contains the Sequelize TypeScript model definitions and associations.
-- `src/routes/` defines the API route groups.
-- `src/utils/` contains shared helpers such as file storage, hashing, token generation, Excel parsing, and workflow helpers.
-- `src/errors/` contains custom error classes.
-- `src/types/` contains TypeScript request and domain types.
-- `migrations/` contains Sequelize migration files.
-- `config/config.js` and `models/index.js` support Sequelize CLI workflows.
-- `uploads/` stores generated monthly document files.
+- src/app.ts: Express app setup, middleware registration, CORS configuration, and API route mounting
+- src/server.ts: server bootstrap, database connection, seeding, and startup flow
+- src/controllers/: request handlers for each domain
+- src/services/: business logic layer
+- src/routes/: API route definitions
+- src/middlewares/: authentication, authorization, and upload middleware
+- src/models/: Sequelize model definitions and relationships
+- src/utils/: shared helpers such as token generation, hashing, workflow processing, file storage, and Excel parsing
+- src/types/: shared TypeScript types and enums
+- uploads/: stored monthly document files and related artifacts
 
 ## API Modules
 
-The server mounts the following route groups under `/api`:
+The app exposes these main route groups under /api:
 
-- `/api/auth`
-- `/api/faculties`
-- `/api/officers`
-- `/api/faculty-ma`
-- `/api/batches`
-- `/api/eligible-students`
-- `/api/users`
-- `/api/admin`
-- `/api/monthly-documents`
+- /api/auth - login, registration, logout, and current user information
+- /api/faculties - faculty management
+- /api/officers - officer-related operations
+- /api/faculty-ma - faculty MA workflows
+- /api/batches - batch management
+- /api/eligible-students - eligible student uploads and checks
+- /api/users - user-related operations
+- /api/admin - admin-level user and document management
+- /api/monthly-documents - monthly document submission and workflow actions
 
-## Runtime Flow
+## Roles
 
-When the application starts, `src/server.ts` does the following:
+The application uses the following roles defined in the user role enum:
 
-1. Loads environment variables with `dotenv`.
-2. Authenticates the Sequelize connection.
-3. Runs the built-in seeders for faculties, departments, and admin users.
-4. Starts the Express server.
+- ADMIN
+- STUDENT_SERVICE_SAR
+- FACULTY_AR
+- FACULTY_MA
+- DEPARTMENT_HEAD
+- DEPARTMENT_MA
+- STUDENT
 
-## Requirements
+These roles drive authorization across protected routes and document workflow actions.
+
+## Prerequisites
 
 - Node.js 18 or later
-- MySQL
+- MySQL server running locally or remotely
 
 ## Installation
 
@@ -104,7 +117,7 @@ npm install
 
 ## Environment Variables
 
-Create a `.env` file in the project root.
+Create a .env file at the project root with values similar to the following:
 
 ```env
 PORT=5000
@@ -118,7 +131,7 @@ DB_PASSWORD=yourpassword
 JWT_SECRET=your_secret_key
 ```
 
-If your frontend runs on a different origin, update the CORS origin in `src/app.ts` as well.
+If your frontend runs on a different origin, update the CORS configuration in src/app.ts accordingly.
 
 ## Database Setup
 
@@ -128,30 +141,39 @@ Create the database first:
 CREATE DATABASE smartbursery;
 ```
 
-Run migrations with Sequelize CLI if needed:
+Then run migrations:
 
 ```bash
 npx sequelize-cli db:migrate
 ```
 
+## Running the Server
+
+Development mode:
+
+```bash
+npm run dev
+```
+
+Production build:
+
+```bash
+npm run build
+npm start
+```
+
 ## Available Scripts
 
-- `npm run dev` starts the TypeScript server with `nodemon` and `ts-node`.
-- `npm run build` compiles the project with `tsc`.
-- `npm start` runs the compiled server from `dist/server.js`.
-- `npm test` is currently a placeholder.
-
-## Development
-
-The server listens on the port defined by `PORT` or falls back to `5000`.
-
-Uploaded monthly documents are stored under `uploads/monthly/`, grouped by year, month, batch, and department.
+- npm run dev: starts the TypeScript server with nodemon and ts-node
+- npm run build: compiles the project with TypeScript
+- npm start: runs the compiled build from dist/server.js
+- npm test: placeholder for future test coverage
 
 ## Notes
 
-- The repository currently keeps both runtime Sequelize models in `src/models/` and CLI-related files at the project root.
-- The monthly document workflow relies on `src/utils/documentWorkflow.ts` and `src/utils/fileStorage.ts`.
-- Seeders are executed automatically on server startup, so repeated starts may reapply seed logic depending on the seeder implementation.
+- Seeders are executed automatically during startup, so the initial database state is prepared as the server boots.
+- Uploaded monthly documents are stored under uploads/monthly/ and organized by year, month, batch, and department.
+- The monthly document workflow is a core part of the system and relies on the workflow and storage helpers in src/utils/.
 
 ## License
 
